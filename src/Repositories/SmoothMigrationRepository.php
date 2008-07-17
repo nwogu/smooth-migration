@@ -94,23 +94,28 @@ class SmoothMigrationRepository
     }
 
     /**
-     * Get the completed migrations with their batch numbers.
+     * Get previous schema load by batch.
+     * @param string $schemaClass
+     * @param int $batch
      *
      * @return array
      */
-    public function getMigrationBatches()
+    public function previousSchemaLoad(string $schemaClass, int $batch)
     {
-        return $this->table()
-                ->orderBy('batch', 'asc')
-                ->orderBy('migration', 'asc')
-                ->pluck('batch', 'migration')->all();
+        $query =  $this->table()
+                ->where('schema_class', $schemaClass);
+        while (! $query->where('batch', $batch)->exists() && $batch > 0) {
+            $batch--;
+        }
+        return json_decode(
+            $query->where('batch', $batch)->first()->schema_load, true);
     }
 
     /**
      * Log that a migration was run.
      *
      * @param  string  $schemaClass
-     * @param  string  $schemaLoad
+     * @param  array  $schemaLoad
      * @param string|null $migrationPath
      * @param int $batch
      * @return void
@@ -119,7 +124,7 @@ class SmoothMigrationRepository
     {
         $record = [
             'schema_class' => $schemaClass, 
-            'schema_load' => $schemaLoad,
+            'schema_load' => json_encode($schemaLoad),
             'migration_path' => $migrationPath,
             'batch' => $batch
         ];
