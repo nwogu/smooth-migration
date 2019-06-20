@@ -58,4 +58,20 @@ class MigrateMakeCommand extends BaseCommand
     {
 
     }
+
+    /**
+     * Get all of the smooth migration files in the smooth migration path.
+     *
+     * @return array
+     */
+    protected function getSmoothMigrationFiles()
+    {
+        return Collection::make($this->smooth)->flatMap(function ($path) {
+            return $this->files->glob($path.'/*_*.php');
+        })->filter()->sortBy(function ($file) {
+            return $this->getMigrationName($file);
+        })->values()->keyBy(function ($file) {
+            return $this->getMigrationName($file);
+        })->all();
+    }
 }

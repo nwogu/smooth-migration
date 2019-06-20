@@ -68,9 +68,7 @@ class SmoothCreateCommand extends Command
     public function handle()
     {
         $this->createSmoothMigration(
-
             $this->smoothMigrationDirectory(), 
-
             $this->smoothMigrationPath(), $this->populateStub());
 
         $this->info('Smooth Migration Class created successfully!');
@@ -78,9 +76,7 @@ class SmoothCreateCommand extends Command
         $this->info('Creating Smooth Migration Serializer.....');
 
         $this->createSmoothMigration(
-
             $this->smoothSerializerDirectory(),
-
             $this->smoothSerializerPath(), $this->fetchSerializableData()
         );
 
@@ -121,7 +117,7 @@ class SmoothCreateCommand extends Command
     protected function smoothSerializerDirectory()
     {
         return config("smooth.serializer_path", $this->smoothMigrationDirectory() .
-                SMOOTH_SERIALIZER_FOLDER . "/");
+                SMOOTH_SERIALIZER_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -132,8 +128,8 @@ class SmoothCreateCommand extends Command
     protected function smoothMigrationDirectory()
     {
         return config("smooth.migration_path", $this->laravel->databasePath() .
-                '/migrations/' . 
-                SMOOTH_MIGRATION_FOLDER . '/');
+                DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR .
+                SMOOTH_MIGRATION_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -169,16 +165,16 @@ class SmoothCreateCommand extends Command
     protected function fetchSerializableData()
     {
         $smoothMigrationModel = $this->getClassName() . 
-            SMOOTH_MIGRATION_FILE . ".json";
+            SMOOTH_MIGRATION_FILE;
 
         $serializeLoad = [];
 
-        if (class_exists($smoothMigrationModel)) {
-            $smoothMigrationModel = new $smoothMigrationModel;
-            $serializeLoad['table'] = $smoothMigrationModel->getTable();
-            $serializeLoad['columns'] = $smoothMigrationModel->getColumns();
-            $serializeLoad['schemas'] = $smoothMigrationModel->getSchemas($smoothMigrationModel);
-        }
+        $this->files->requireOnce($this->smoothMigrationPath());
+
+        $smoothMigrationModel = new $smoothMigrationModel;
+        $serializeLoad['table'] = $smoothMigrationModel->getTable();
+        $serializeLoad['columns'] = $smoothMigrationModel->getColumns();
+        $serializeLoad['schemas'] = $smoothMigrationModel->getSchemas();
 
         return json_encode($serializeLoad);
     }
