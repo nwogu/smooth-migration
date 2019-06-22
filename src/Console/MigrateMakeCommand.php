@@ -2,13 +2,15 @@
 
 namespace Nwogu\SmoothMigration\Console;
 
-use Illuminate\Support\Str;
 use Illuminate\Support\Composer;
+use Illuminate\Support\Collection;
+use Nwogu\SmoothMigration\Traits\SmoothMigratable;
 use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
 
 class MigrateMakeCommand extends BaseCommand
 {
+    Use SmoothMigratable;
 
     /**
      * Create a new migration install command instance.
@@ -20,7 +22,7 @@ class MigrateMakeCommand extends BaseCommand
     public function __construct(MigrationCreator $creator, Composer $composer)
     {
         $this->signature .= "
-        {--smooth : Create a migration file from a Smooth Migration Class.}
+        {--smooth : Create a migration file from a Smooth Schema Class.}
         ";
 
         parent::__construct($creator, $composer);
@@ -51,27 +53,38 @@ class MigrateMakeCommand extends BaseCommand
     }
 
     /**
-     * Create a Smooth Migration Class
+     * Create Laravel's Default Migration Files
      * @return void
      */
     protected function writeSmoothMigration()
     {
+        foreach ($this->getSchemaFiles() as $path) {
+            $instance = $this->schemaInstance($path);
 
+            if ($instance->schemaIsChanged()) {
+                $this->writeNewSmoothMigration($instance);
+
+                $this->createFile(
+                    $this->serializerDirectory(),
+                    $instance->serializePath(),
+                    $this->fetchSerializableData($instance)
+                );
+            }
+            
+        }
     }
 
     /**
-     * Get all of the smooth migration files in the smooth migration path.
+     * Get all of the smooth schema files in the smooth schema path.
      *
      * @return array
      */
-    protected function getSmoothMigrationFiles()
+    protected function getSchemaFiles()
     {
-        return Collection::make($this->smooth)->flatMap(function ($path) {
-            return $this->files->glob($path.'/*_*.php');
+        return Collection::make($this->schemaDirectory())->flatMap(function ($path) {
+            return $this->files->glob($path.'*Schema.php*');
         })->filter()->sortBy(function ($file) {
-            return $this->getMigrationName($file);
-        })->values()->keyBy(function ($file) {
-            return $this->getMigrationName($file);
-        })->all();
+            return $this->getSchemaName($file);
+        })->values()->all();
     }
 }

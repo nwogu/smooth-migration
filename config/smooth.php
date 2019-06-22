@@ -1,6 +1,6 @@
 <?php
 
 return [
-    "migration_path" => database_path("migrations/smooth/"),
-    "serializer_path" => database_path("migrations/smooth/serializers")
+    "schema_path" => database_path("migrations/schema/"),
+    "serializer_path" => database_path("migrations/schema/serializers/")
 ];

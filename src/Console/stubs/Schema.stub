@@ -1,0 +1,40 @@
+<?php
+
+use Nwogu\SmoothMigration\Abstracts\Schema;
+
+class {{SMOOTH_SCHEMA_CLASS}} extends Schema
+{
+
+    /**
+    * Table Name
+    * 
+    * @var string
+    */
+    protected $table = "{{TABLE_NAME}}";
+
+     /**
+     * Specify Schema to run first.
+     *
+     * @array
+     */
+     protected $runFirst = [
+
+     ];
+
+
+     /**
+     * Specify your schemas as Stringed properties. Eg:
+     * 
+     * protected $bookworm = "string, nullable=true";
+     * 
+     * protected $status = "boolean, default=true";
+     * 
+     * protected $user_id = "unsigned, nullable=true, references=id, on=users, onDelete=cascade";
+     * 
+     * protected $price = "float=3 10, nullable=true";
+     *
+     * protected $timestamps;
+     * 
+     */
+
+}
