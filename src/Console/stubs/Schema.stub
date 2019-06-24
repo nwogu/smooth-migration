@@ -25,11 +25,11 @@ class {{SMOOTH_SCHEMA_CLASS}} extends Schema
      /**
      * Specify your schemas as Stringed properties. Eg:
      * 
-     * protected $bookworm = "string, nullable=true";
+     * protected $bookworm = "string, nullable";
      * 
      * protected $status = "boolean, default=true";
      * 
-     * protected $user_id = "unsigned, nullable=true, references=id, on=users, onDelete=cascade";
+     * protected $user_id = "integer, on=users, onDelete=cascade";
      * 
      * protected $price = "float=3 10, nullable=true";
      *

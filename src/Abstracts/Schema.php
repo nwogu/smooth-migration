@@ -3,6 +3,9 @@
 namespace Nwogu\SmoothMigration\Abstracts;
 
 use Illuminate\Support\Collection;
+use const Nwogu\SmoothMigration\Helpers\SCHEMA_DEFAULTS;
+use const Nwogu\SmoothMigration\Helpers\SMOOTH_SCHEMA_FILE;
+use Nwogu\SmoothMigration\Helpers\SchemaReader;
 
 abstract class Schema
 {
@@ -28,22 +31,34 @@ abstract class Schema
      * Get Table Name
      * @return string
      */
-    protected function getTable()
+    public function table()
     {
         return $this->table;
+    }
+
+    /**
+     * Get Schemas To Run First
+     * @return array
+     */
+    public function runFirst()
+    {
+        return $this->runFirst;
     }
 
     /**
      * Get Table Schema
      * @return string
      */
-    protected function getSchemas()
+    public function schemas()
     {
         $allVars = get_object_vars($this);
+
         $schemas = Collection::make($allVars)->filter(function($vars, $key) {
-            return !in_array($key, ["table", "runFirst", "autoIncrement"]);
+            return !in_array($key, SCHEMA_DEFAULTS);
         })->all();
-        if ($this->autoIncrement) $schemas["id"] = "increments";
+
+        !$this->autoIncrement ?: $schemas["id"] = "increments";
+        
         return $schemas;
     }
 
@@ -51,16 +66,21 @@ abstract class Schema
      * Get Serialize Path For saved schemas
      * @return string
      */
-    protected function serializePath()
+    public function serializePath()
     {
-        return config("serializer_path") . __CLASS__ . ".json";
+        $serializerPath =  config("serializer_path") . __CLASS__ . ".json";
+        if (! file_exists($serializerPath)) {
+            throw new \Exception(
+                "Serializer path $serializerPath not found for" . __CLASS__);
+        }
+        return $serializerPath;
     }
 
     /**
      * Get Saved Schema Load for Migration
-     * @return string
+     * @return array
      */
-    protected function savedSchemaLoad()
+    public function savedSchemaLoad()
     {
         return json_decode(
             file_get_contents($this->serializePath()),
@@ -70,13 +90,13 @@ abstract class Schema
 
     /**
      * Get Current Schema Load for Migration
-     * @return string
+     * @return array
      */
-    protected function currentSchemaLoad()
+    public function currentSchemaLoad()
     {
-        $serializeLoad['table'] = $this->getTable();
+        $serializeLoad['table'] = $this->table();
         
-        $serializeLoad['schemas'] = $this->getSchemas();
+        $serializeLoad['schemas'] = $this->schemas();
 
         return $serializeLoad;
     }
@@ -85,8 +105,21 @@ abstract class Schema
      * Check if Migration Schema is Changed
      * @return bool
      */
-    protected function schemaIsChanged()
+    public function schemaIsChanged()
     {
+        return (new SchemaReader(
+            $this->savedSchemaLoad(),
+            $this->currentSchemaLoad()
+        ))->hasChanged();
+    }
 
+    /**
+     * Returns Class Name without "Schema"
+     * @return string
+     */
+    public function basename()
+    {
+        return substr(static::class, 0, 
+                strpos(static::class, SMOOTH_SCHEMA_FILE));
     }
 }

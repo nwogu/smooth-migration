@@ -62,14 +62,21 @@ class MigrateMakeCommand extends BaseCommand
             $instance = $this->schemaInstance($path);
 
             if ($instance->schemaIsChanged()) {
+                $this->info("Writing Migration For {$path}");
+
                 $this->writeNewSmoothMigration($instance);
+
+                $this->info("Migration Created Successfully");
+                $this->info("Updating Serializer for {$path}");
 
                 $this->createFile(
                     $this->serializerDirectory(),
                     $instance->serializePath(),
                     $this->fetchSerializableData($instance)
                 );
+                $this->info("Serializer Updated Successfully");
             }
+            $this->info("No Schema Change Detected For {$path}");
             
         }
     }
