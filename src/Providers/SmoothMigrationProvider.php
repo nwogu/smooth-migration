@@ -3,6 +3,7 @@
 namespace Nwogu\SmoothMigration\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Nwogu\SmoothMigration\Console\SmoothCreateCommand;
 
 class SmoothMigrationProvider extends ServiceProvider
 {
@@ -13,6 +14,11 @@ class SmoothMigrationProvider extends ServiceProvider
      */
     public function boot()
     {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SmoothCreateCommand::class,
+            ]);
+        }
         
     }
 
