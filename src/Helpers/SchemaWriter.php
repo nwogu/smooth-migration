@@ -6,8 +6,7 @@ use Illuminate\Support\Str;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Illuminate\Support\Facades\Schema as Builder;
 use Nwogu\SmoothMigration\Helpers\SchemaComposer;
-use const Nwogu\SmoothMigration\Helpers\SCHEMA_CREATE_ACTION;
-use const Nwogu\SmoothMigration\Helpers\SCHEMA_UPDATE_ACTION;
+use Nwogu\SmoothMigration\Helpers\Constants;
 
 class SchemaWriter
 {
@@ -40,8 +39,8 @@ class SchemaWriter
     protected function setaction()
     {
         $this->action = Builder::exists($this->schema->table()) ? 
-            SCHEMA_UPDATE_ACTION :
-            SCHEMA_CREATE_ACTION ;
+            Constants::SCHEMA_UPDATE_ACTION :
+            Constants::SCHEMA_CREATE_ACTION ;
     }
 
     /**

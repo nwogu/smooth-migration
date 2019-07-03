@@ -2,36 +2,41 @@
 
 namespace Nwogu\SmoothMigration\Helpers;
 
-const SMOOTH_SCHEMA_FILE = "Schema";
+class Constants
+{
 
-const SMOOTH_SCHEMA_FOLDER = "schema";
+    const SMOOTH_SCHEMA_FILE = "Schema";
 
-const SMOOTH_SERIALIZER_FOLDER = "serializers";
+    const SMOOTH_SCHEMA_FOLDER = "schema";
 
-const SCHEMA_DEFAULTS = [
-    "table", "runFirst", "autoIncrement"
-];
+    const SMOOTH_SERIALIZER_FOLDER = "serializers";
 
-const TABLE_RENAME_ACTION = "tableRename";
+    const SCHEMA_DEFAULTS = [
+        "table", "runFirst", "autoIncrement"
+    ];
 
-const COLUMN_RENAME_ACTION = "columnRename";
+    const TABLE_RENAME_ACTION = "tableRename";
 
-const DEF_CHANGE_ACTION = "defChange";
+    const COLUMN_RENAME_ACTION = "columnRename";
 
-const COLUMN_DROP_ACTION = "columnDrop";
+    const DEF_CHANGE_ACTION = "defChange";
 
-const COLUMN_ADD_ACTION = "columnAdd";
+    const COLUMN_DROP_ACTION = "columnDrop";
 
-const FOREIGN_DROP_ACTION = "dropForeign";
+    const COLUMN_ADD_ACTION = "columnAdd";
 
-const TABLE_CHANGE_LOG = "table";
+    const FOREIGN_DROP_ACTION = "dropForeign";
 
-const SCHEMA_CHANGE_LOG = "schema";
+    const TABLE_CHANGE_LOG = "table";
 
-const SCHEMA_CREATE_ACTION = "create";
+    const SCHEMA_CHANGE_LOG = "schema";
 
-const SCHEMA_UPDATE_ACTION = "update";
+    const SCHEMA_CREATE_ACTION = "create";
 
-const FOREIGN_VALUES = [
-    "foreign", "references", "on"
-];
+    const SCHEMA_UPDATE_ACTION = "update";
+
+    const FOREIGN_VALUES = [
+        "foreign", "references", "on"
+    ];
+
+}

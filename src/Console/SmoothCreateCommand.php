@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 use Illuminate\Console\Command;
 use Illuminate\Support\Composer;
 use Nwogu\SmoothMigration\Traits\SmoothMigratable;
-use const Nwogu\SmoothMigration\Helpers\SMOOTH_SCHEMA_FILE;
+use Nwogu\SmoothMigration\Helpers\Constants;
 
 class SmoothCreateCommand extends Command
 {
@@ -49,6 +49,8 @@ class SmoothCreateCommand extends Command
         parent::__construct();
 
         $this->composer = $composer;
+
+        $this->makeFile();
     }
 
     /**
@@ -87,7 +89,7 @@ class SmoothCreateCommand extends Command
     {
         return $this->serializerDirectory() .
                 $this->getClassName() .
-                SMOOTH_SCHEMA_FILE . "json";
+                Constants::SMOOTH_SCHEMA_FILE . ".json";
     }
 
     /**
@@ -99,7 +101,7 @@ class SmoothCreateCommand extends Command
     {
         return $this->schemaDirectory() .
                 $this->getClassName() .
-                SMOOTH_SCHEMA_FILE . "php";
+                Constants::SMOOTH_SCHEMA_FILE . ".php";
     }
 
     /**
@@ -116,10 +118,10 @@ class SmoothCreateCommand extends Command
      */
     protected function populateStub()
     {
-        $stub = $this->files->get(__DIR__ . "/stubs/Schema.stub");
+        $stub = $this->files->get(dump(__DIR__ . "/stubs/Schema.stub"));
 
         $stub = str_replace(
-            "{{SMOOTH_SCHEMA_CLASS}}", $this->getClassName() . SMOOTH_SCHEMA_FILE, $stub);
+            "{{SMOOTH_SCHEMA_CLASS}}", $this->getClassName() . Constants::SMOOTH_SCHEMA_FILE, $stub);
 
         $stub = str_replace(
             "{{TABLE_NAME}}", $this->argument('table'), $stub);

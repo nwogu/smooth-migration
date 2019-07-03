@@ -3,8 +3,7 @@
 namespace Nwogu\SmoothMigration\Abstracts;
 
 use Illuminate\Support\Collection;
-use const Nwogu\SmoothMigration\Helpers\SCHEMA_DEFAULTS;
-use const Nwogu\SmoothMigration\Helpers\SMOOTH_SCHEMA_FILE;
+use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Helpers\SchemaReader;
 
 abstract class Schema
@@ -60,7 +59,7 @@ abstract class Schema
         $allVars = get_object_vars($this);
 
         $schemas = Collection::make($allVars)->filter(function($vars, $key) {
-            return !in_array($key, SCHEMA_DEFAULTS);
+            return !in_array($key, Constants::SCHEMA_DEFAULTS);
         })->all();
 
         !$this->autoIncrement ?: $schemas["id"] = "increments";
@@ -146,6 +145,6 @@ abstract class Schema
     public function basename()
     {
         return substr(static::class, 0, 
-                strpos(static::class, SMOOTH_SCHEMA_FILE));
+                strpos(static::class, Constants::SMOOTH_SCHEMA_FILE));
     }
 }

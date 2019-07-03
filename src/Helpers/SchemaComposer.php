@@ -3,9 +3,7 @@
 namespace Nwogu\SmoothMigration\Helpers;
 
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
-use const Nwogu\SmoothMigration\Helpers\SCHEMA_CREATE_ACTION;
-use const Nwogu\SmoothMigration\Helpers\SCHEMA_UPDATE_ACTION;
-use const Nwogu\SmoothMigration\Helpers\FOREIGN_VALUES;
+use Nwogu\SmoothMigration\Helpers\Constants;
 
 class SchemaComposer
 {
@@ -50,8 +48,8 @@ class SchemaComposer
      * @var array
      */
     protected $composeMethods = [
-        SCHEMA_CREATE_ACTION => "create",
-        SCHEMA_UPDATE_ACTION => [
+        Constants::SCHEMA_CREATE_ACTION => "create",
+        Constants::SCHEMA_UPDATE_ACTION => [
             "rename", "drop", "addition"
         ]
     ];
@@ -130,7 +128,7 @@ class SchemaComposer
         }
         $lines = array_merge_recursive($this->uplines, $this->foreignLines);
 
-        return $this->populateStub(SCHEMA_CREATE_ACTION, 
+        return $this->populateStub(Constant::SCHEMA_CREATE_ACTION, 
             $this->writer->migrationClass(), $this->writer->schema->table(), 
             implode("\n", $lines));
     }
@@ -335,7 +333,7 @@ class SchemaComposer
      */
     protected function prepareForeignKey(array &$arrayed)
     {
-        foreach (FOREIGN_VALUES as $val) {
+        foreach (Constants::FOREIGN_VALUES as $val) {
             $foreignArrayed[$val] = $arrayed[$val] ?? [];
             if (isset($arrayed[$val])) unset($arrayed[$val]);
         }

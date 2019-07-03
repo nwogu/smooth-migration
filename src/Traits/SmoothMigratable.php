@@ -4,8 +4,7 @@ namespace Nwogu\SmoothMigration\Traits;
 
 use Illuminate\Filesystem\Filesystem;
 use Nwogu\SmoothMigration\Abstracts\Schema;
-use const Nwogu\SmoothMigration\Helpers\SMOOTH_SCHEMA_FOLDER;
-use const Nwogu\SmoothMigration\Helpers\SMOOTH_SERIALIZER_FOLDER;
+use Nwogu\SmoothMigration\Helpers\Constants;
 
 /**
  * SmoothMigratable
@@ -20,16 +19,15 @@ trait SmoothMigratable
     protected $files;
 
     /**
-     * Create a new smooth Schema class.
+     * Create Filesytem Instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @return void
      */
-    public function __construct(Filesystem $files)
+    public function makeFile()
     {
-        parent::__construct();
 
-        $this->files = $files;
+        $this->files = app()->make(Filesystem::class);
     }
 
     /**
@@ -40,7 +38,7 @@ trait SmoothMigratable
     protected function serializerDirectory()
     {
         return config("smooth.serializer_path", $this->schemaDirectory() .
-                SMOOTH_SERIALIZER_FOLDER . DIRECTORY_SEPARATOR);
+                Constants::SMOOTH_SERIALIZER_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -52,7 +50,7 @@ trait SmoothMigratable
     {
         return config("smooth.schema_path", $this->laravel->databasePath() .
                 DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR .
-                SMOOTH_SCHEMA_FOLDER . DIRECTORY_SEPARATOR);
+                Constants::SMOOTH_SCHEMA_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**

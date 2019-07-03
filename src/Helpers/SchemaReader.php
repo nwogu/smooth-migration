@@ -3,12 +3,7 @@
 namespace Nwogu\SmoothMigration\Helpers;
 
 use Illuminate\Support\Str;
-use const Nwogu\SmoothMigration\Helpers\TABLE_RENAME_ACTION;
-use const Nwogu\SmoothMigration\Helpers\DEF_CHANGE_ACTION;
-use const Nwogu\SmoothMigration\Helpers\COLUMN_RENAME_ACTION;
-use const Nwogu\SmoothMigration\Helpers\COLUMN_ADD_ACTION;
-use const Nwogu\SmoothMigration\Helpers\COLUMN_DROP_ACTION;
-use const Nwogu\SmoothMigration\Helpers\FOREIGN_DROP_ACTION;
+use Nwogu\SmoothMigration\Helpers\Constants;
 
 class SchemaReader
 {
@@ -133,7 +128,7 @@ class SchemaReader
     protected function read()
     {
         if ($this->previousTable != $this->currentTable) {
-            $this->pushChange(TABLE_RENAME_ACTION, [
+            $this->pushChange(Constants::TABLE_RENAME_ACTION, [
                 $this->previousTable,
                 $this->currentTable
             ]);
@@ -153,7 +148,7 @@ class SchemaReader
     {
         if ($index < count($this->previousColumns)) {
             if ($this->previousColumns[$index] != $this->currentColumns[$index]) {
-                $this->pushChanges(COLUMN_RENAME_ACTION, [
+                $this->pushChanges(Constants::COLUMN_RENAME_ACTION, [
                     $this->previousColumns[$index],
                     $this->currentColumns[$index]
                 ]);
@@ -173,7 +168,7 @@ class SchemaReader
             $previousSchemaArray = $this->schemaToArray($this->previousSchemas[$index]);
             $currentSchemaArray = $this->schemaToArray($this->currentSchemas[$index]);
             if ($this->schemaisDifferent($previousSchemaArray, $currentSchemaArray)) {
-                $this->pushChanges(DEF_CHANGE_ACTION, [
+                $this->pushChanges(Constants::DEF_CHANGE_ACTION, [
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
@@ -212,10 +207,10 @@ class SchemaReader
         };
 
         if ($shouldDropColumn($previousCount, $currentCount)) {
-            $this->pushChanges(COLUMN_DROP_ACTION, array_diff(
+            $this->pushChanges(Constants::COLUMN_DROP_ACTION, array_diff(
                 $this->previousColumns, $this->currentColumns));
         } else {
-            $this->pushChanges(COLUMN_ADD_ACTION, array_diff(
+            $this->pushChanges(Constants::COLUMN_ADD_ACTION, array_diff(
                 $this->currentColumns, $this->previousColumns
             ));
         }
@@ -240,7 +235,7 @@ class SchemaReader
                 $this->currentLoad[$column]);
             $index = array_search($column, $this->currentColumns);
             if ($this->schemaisDifferent($previousSchemaArray, $currentSchemaArray)) {
-                $this->pushChanges(DEF_CHANGE_ACTION, [
+                $this->pushChanges(Constants::DEF_CHANGE_ACTION, [
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
@@ -369,7 +364,7 @@ class SchemaReader
         $column = $this->previousColumns[$affected[0]];
 
         if ($shouldDropForeign($affected[1], $affected[2])) {
-            return $this->pushChanges(FOREIGN_DROP_ACTION, [
+            return $this->pushChanges(Constants::FOREIGN_DROP_ACTION, [
                 $affected[0],
                 $column
             ]);
