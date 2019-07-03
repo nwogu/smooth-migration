@@ -37,6 +37,12 @@ abstract class Schema
     }
 
     /**
+     * Schema Reader
+     * @var SchemaReader
+     */
+    protected $reader;
+
+    /**
      * Get Schemas To Run First
      * @return array
      */
@@ -107,10 +113,30 @@ abstract class Schema
      */
     public function schemaIsChanged()
     {
-        return (new SchemaReader(
+        return $this->reader->hasChanged();
+    }
+
+    /**
+     * Read Schema Changes
+     * @return SchemaReader
+     */
+    public function readSchema()
+    {
+        $this->reader = new SchemaReader(
             $this->savedSchemaLoad(),
             $this->currentSchemaLoad()
-        ))->hasChanged();
+        );
+
+        return $this;
+    }
+
+    /**
+     * Get The active reader of Schema
+     * @return SchemaReader
+     */
+    public function reader()
+    {
+        return $this->reader;
     }
 
     /**

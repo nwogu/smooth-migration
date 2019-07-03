@@ -7,6 +7,8 @@ use Illuminate\Support\Collection;
 use Nwogu\SmoothMigration\Traits\SmoothMigratable;
 use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
+use Nwogu\SmoothMigration\Abstracts\Schema;
+use Nwogu\SmoothMigration\Helpers\SchemaWriter;
 
 class MigrateMakeCommand extends BaseCommand
 {
@@ -59,25 +61,11 @@ class MigrateMakeCommand extends BaseCommand
     protected function writeSmoothMigration()
     {
         foreach ($this->getSchemaFiles() as $path) {
+
             $instance = $this->schemaInstance($path);
 
-            if ($instance->schemaIsChanged()) {
-                $this->info("Writing Migration For {$path}");
-
-                $this->writeNewSmoothMigration($instance);
-
-                $this->info("Migration Created Successfully");
-                $this->info("Updating Serializer for {$path}");
-
-                $this->createFile(
-                    $this->serializerDirectory(),
-                    $instance->serializePath(),
-                    $this->fetchSerializableData($instance)
-                );
-                $this->info("Serializer Updated Successfully");
-            }
-            $this->info("No Schema Change Detected For {$path}");
-            
+            $this->runFirstMigrations($instance);  
+            $this->writeNewSmoothMigration($instance);
         }
     }
 
@@ -93,5 +81,61 @@ class MigrateMakeCommand extends BaseCommand
         })->filter()->sortBy(function ($file) {
             return $this->getSchemaName($file);
         })->values()->all();
+    }
+
+    /**
+     * Run First Migrations
+     * @param Schema $schema
+     * @return void
+     */
+    protected function runFirstMigrations(Schema $schema)
+    {
+        foreach ($schema->runFirst() as $firstRun) {
+
+            $instance = $this->schemaInstance($firstRun, true);
+
+            $this->writeNewSmoothMigration($instance);
+        }
+    }
+
+    /**
+     * Writes a migration to file
+     * @param Schema $instance
+     * @return void
+     */
+    protected function writeNewSmoothMigration(Schema $instance)
+    {
+        if ($instance->readSchema()->hasChanged()) {
+            $this->info("Writing Migration For {$instance->basename()}");
+
+            $this->writeMigration($instance);
+
+            $this->info("Migration Created Successfully");
+            $this->info("Updating Serializer for {$instance->basename()}");
+
+            $this->createFile(
+                $this->serializerDirectory(),
+                $instance->serializePath(),
+                $this->fetchSerializableData($instance)
+            );
+            $this->info("Serializer Updated Successfully");
+        }
+        $this->info("No Schema Change Detected For {$instance->basename()}");
+    }
+
+    /**
+     * Write Migration File
+     * @param Schema $schemaInstance
+     * @return void
+     */
+    protected function writeMigration(Schema $schemaInstance)
+    {
+        $writer = new SchemaWriter($schemaInstance);
+
+        $this->createFile(
+            $writer->migrationDirectory(),
+            $writer->migrationPath(),
+            $writer->load()
+        );
     }
 }

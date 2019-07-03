@@ -69,13 +69,14 @@ trait SmoothMigratable
     /**
      * Get Instance of a smooth Schema class
      * @param string $path
+     * @param bool $namespaced
      * @return Schema
      */
-    protected function schemaInstance($path)
+    protected function schemaInstance($path, $namespaced = false)
     {
         $class = $this->getSchemaName($path);
 
-        $this->files->requireOnce($path);
+        $namespaced ?: $this->files->requireOnce($path);
 
         return new $class;
     }

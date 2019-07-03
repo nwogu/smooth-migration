@@ -5,6 +5,7 @@ namespace Nwogu\SmoothMigration\Helpers;
 use Illuminate\Support\Str;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Illuminate\Support\Facades\Schema as Builder;
+use Nwogu\SmoothMigration\Helpers\SchemaComposer;
 use const Nwogu\SmoothMigration\Helpers\SCHEMA_CREATE_ACTION;
 use const Nwogu\SmoothMigration\Helpers\SCHEMA_UPDATE_ACTION;
 
@@ -14,7 +15,7 @@ class SchemaWriter
      * Schema Instance
      * @var Schema $schema
      */
-    protected $schema;
+    public $schema;
 
     /**
      * Writer Table Action
@@ -56,9 +57,9 @@ class SchemaWriter
      * Get Migration Path
      * @return string
      */
-    protected function migrationPath()
+    public function migrationPath()
     {
-        return  $this->laravel->databasePath().'/migrations/' .
+        return  database_path("migrations/") .
                 date('Y_m_d_His') . "_" . 
                 Str::snake($this->migrationClass()) .
                 ".php";
@@ -68,7 +69,7 @@ class SchemaWriter
      * Get Migration Class
      * @return string
      */
-    protected function migrationClass()
+    public function migrationClass()
     {
         return Str::studly($this->schema->basename() . "Table");
     }
@@ -80,23 +81,7 @@ class SchemaWriter
      */
     public function write()
     {
-        $method = "write" . Str::studly($this->action) . "Action";
-
-        if (method_exists($this, $method)) {
-
-            $this->$method();
-        }
-
-        throw new \Exception("Migration Method {$this->action} not supported");
-    }
-
-    /**
-     * handles write action for creating new migrations
-     * @return void
-     */
-    protected function writeCreateAction()
-    {
-
+        return SchemaComposer::make($this);
     }
 
 }
