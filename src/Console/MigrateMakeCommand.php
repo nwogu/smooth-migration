@@ -23,10 +23,10 @@ class MigrateMakeCommand extends BaseCommand
      */
     public function __construct(MigrationCreator $creator, Composer $composer)
     {
-        $this->signature .= "
-        {--smooth : Create a migration file from a Smooth Schema Class.}
-        ";
+        $this->makeFile();
 
+        $this->modifySignature();
+        
         parent::__construct($creator, $composer);
     }
 
@@ -41,7 +41,7 @@ class MigrateMakeCommand extends BaseCommand
 
             $this->writeSmoothMigration() :
 
-            parent::handle();
+            $this->parentHandle();
     }
 
     /**
@@ -137,5 +137,29 @@ class MigrateMakeCommand extends BaseCommand
             $writer->migrationPath(),
             $writer->load()
         );
+    }
+
+     /**
+     * Modify Signature
+     * @return void
+     */
+    protected function modifySignature()
+    {
+        $this->signature = str_replace("{name", "{name=''", $this->signature);
+
+        $this->signature .= "{--smooth : Create a migration file from a Smooth Schema Class.}";
+    }
+
+    /**
+     * Check for the name argument before calling parent
+     * @return void
+     */
+    protected function parentHandle()
+    {
+        return empty($this->argument("name")) ?
+
+                $this->error("Name Argument is Required") :
+                
+                parent::handle();
     }
 }

@@ -153,7 +153,7 @@ class SchemaReader
                     $this->currentColumns[$index]
                 ]);
             }
-            $this->readByColumn($index++);
+            $this->readByColumn($index = $index + 1);
         }
         $this->readBySchema();
     }
@@ -172,7 +172,7 @@ class SchemaReader
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
-            $this->readBySchema($index++);
+            $this->readBySchema($index = $index + 1);
 
         }
     }

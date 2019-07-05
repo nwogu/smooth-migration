@@ -118,7 +118,7 @@ class SmoothCreateCommand extends Command
      */
     protected function populateStub()
     {
-        $stub = $this->files->get(dump(__DIR__ . "/stubs/Schema.stub"));
+        $stub = $this->files->get(__DIR__ . "/stubs/Schema.stub");
 
         $stub = str_replace(
             "{{SMOOTH_SCHEMA_CLASS}}", $this->getClassName() . Constants::SMOOTH_SCHEMA_FILE, $stub);

@@ -73,10 +73,10 @@ abstract class Schema
      */
     public function serializePath()
     {
-        $serializerPath =  config("serializer_path") . __CLASS__ . ".json";
+        $serializerPath =  config("smooth.serializer_path") . static::class . ".json";
         if (! file_exists($serializerPath)) {
             throw new \Exception(
-                "Serializer path $serializerPath not found for" . __CLASS__);
+                "Serializer path $serializerPath not found for" . static::class);
         }
         return $serializerPath;
     }
@@ -110,7 +110,7 @@ abstract class Schema
      * Check if Migration Schema is Changed
      * @return bool
      */
-    public function schemaIsChanged()
+    public function hasChanged()
     {
         return $this->reader->hasChanged();
     }
