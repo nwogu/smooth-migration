@@ -20,8 +20,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Nwogu\\SmoothMigration\\Providers\\SmoothMigrationProvider",
-                "Nwogu\\SmoothMigration\\Providers\\MakeMigrationProvider"
+                "Nwogu\\SmoothMigration\\Providers\\SmoothMigrationProvider"
             ]
         }
     },
