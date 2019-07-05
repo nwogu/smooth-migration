@@ -108,7 +108,7 @@ class MigrateMakeCommand extends BaseCommand
         if ($instance->readSchema()->hasChanged()) {
             $this->info("Writing Migration For {$instance->basename()}");
 
-            $this->writeMigration($instance);
+            $this->writeSchema($instance);
 
             $this->info("Migration Created Successfully");
             $this->info("Updating Serializer for {$instance->basename()}");
@@ -128,7 +128,7 @@ class MigrateMakeCommand extends BaseCommand
      * @param Schema $schemaInstance
      * @return void
      */
-    protected function writeMigration(Schema $schemaInstance)
+    protected function writeSchema(Schema $schemaInstance)
     {
         $writer = new SchemaWriter($schemaInstance);
 
