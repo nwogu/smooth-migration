@@ -2,11 +2,17 @@
 
 namespace Nwogu\SmoothMigration\Helpers;
 
-use Nwogu\SmoothMigration\Helpers\SchemaWriter;
+use Closure;
 use Nwogu\SmoothMigration\Helpers\Constants;
+use Nwogu\SmoothMigration\Helpers\SchemaReader;
+use Nwogu\SmoothMigration\Helpers\SchemaWriter;
 
 class SchemaComposer
 {
+    /**
+     * @var SchemaReader
+     */
+    protected $reader;
     /**
      * Lines for Up method
      * @var array
@@ -54,9 +60,11 @@ class SchemaComposer
      * @var array
      */
     protected $composeMethods = [
-        Constants::SCHEMA_CREATE_ACTION => "create",
+        Constants::SCHEMA_CREATE_ACTION => Constants::SCHEMA_CREATE_ACTION,
         Constants::SCHEMA_UPDATE_ACTION => [
-            "rename", "drop", "addition"
+            Constants::DEF_CHANGE_ACTION, Constants::COLUMN_DROP_ACTION,
+            Constants::COLUMN_ADD_ACTION, Constants::FOREIGN_DROP_ACTION,
+            Constants::COLUMN_RENAME_ACTION, Constants::TABLE_RENAME_ACTION
         ]
     ];
 
@@ -73,6 +81,8 @@ class SchemaComposer
     public function __construct(SchemaWriter $writer)
     {
         $this->writer = $writer;
+
+        $this->reader = $this->writer->schema->reader();
     }
 
     /**
@@ -98,8 +108,9 @@ class SchemaComposer
             return $this->$composeMethod();
         }
         foreach ($composeMethod as $callable) {
-            return method_exists($this, $callable) ?: $this->$callable();
+            !method_exists($this, $callable) ?: $this->$callable();
         }
+        return $this->finalize();
     }
 
     /**
@@ -131,11 +142,8 @@ class SchemaComposer
     protected function create()
     {
         foreach ($this->writer->schema->schemas() as $column => $schemas) {
-            $this->composeUp($column, $schemas);
-            if (! empty($this->preparedForeign)) {
-                $this->composeUp($column, $this->preparedForeign, "foreignLines");
-                $this->preparedForeign = [];
-            }
+            $this->compose($column, $schemas);
+            $this->composeForeign($column);
         }
         $lines = array_merge_recursive($this->uplines, $this->foreignLines);
 
@@ -145,17 +153,124 @@ class SchemaComposer
     }
 
     /**
+     * Handle Column Definition changes
+     * @return void
+     */
+    protected function defChange()
+    {
+        foreach ($this->reader->defChanges() as $column) {
+            $this->compose(
+                $column, $this->reader->currentLoad()[$column],
+                "uplines", false, $this->afterWrite());
+            $this->compose(
+                $column, $this->reader->previousLoad()[$column],
+                "downlines", false, $this->afterWrite());
+            }
+    }
+
+    /**
+     * Get Callback for action to perform after writing
+     * @return Closure
+     */
+    protected function afterWrite()
+    {
+        return function ($line, $lineType) {
+            $writer = $this->endWrite($line . $this->doOther("change"));
+            $this->$lineType[] = $writer;
+        };
+    }
+
+    /**
+     * Handle Column Drops
+     * @return void
+     */
+    protected function columnDrop()
+    {
+        foreach ($this->reader->columnDrops() as $column) {
+            $this->compose(
+                $column, $this->columnDropSchema());
+            $this->compose(
+                $column, $this->reader->previousLoad()[$column],
+                "downlines");
+        }
+    }
+
+    /**
+     * Handle Column Additions
+     * @return void
+     */
+    protected function columnAdd()
+    {
+        foreach ($this->reader->columnAdds() as $column) {
+            $this->compose(
+                $column, $this->reader->currentLoad()[$column]);
+            $this->compose(
+                $column, $this->columnDropSchema(),
+                "downlines");
+        }
+    }
+
+    /**
+     * Handle Foreign key Additions
+     * @return void
+     */
+    protected function foreignAdd()
+    {
+        //to do: write schemareader method to add foreign keys 
+        
+    }
+
+    /**
+     * Handle Drop of Foreign keys
+     * @return void
+     */
+    protected function dropForeign()
+    {
+        
+    }
+
+    /**
+     * Handle foreign schemas
+     * @param string $column
+     * @return void
+     */
+    protected function composeForeign(string $column)
+    {
+        if (! empty($this->preparedForeign)) {
+            $this->compose($column, $this->preparedForeign, "foreignLines");
+            $this->preparedForeign = [];
+        }
+    }
+
+    /**
+     * Handle downlines of foreign schemas
+     * @param string $column
+     * @return void
+     */
+    protected function composeDownForeign(string $column)
+    {
+        if (! empty($this->preparedForeign)) {
+            $this->compose($column, $this->preparedForeign, "foreignLines");
+            $this->preparedForeign = [];
+        }
+    }
+
+    /**
      * Compose up migration method
      */
-    protected function composeUp($column, $schema, $linetype = "uplines")
+    protected function compose($column, $schema, 
+        $linetype = "uplines", $endWrite = true, Closure $afterWrite = null)
     {
         $schema = is_array($schema) ? $schema : $this->schemaArray($schema, $column);
         $writer = "\$table->";
         foreach ($schema as $method => $options) {
             $writer = $this->writeLine($method, $options, $column, $writer);
         }
-        $writer = $this->endWrite($writer);
-        $this->$linetype[] = $writer;
+        
+        !$endWrite ?: $writer = $this->endWrite($writer);
+
+        return $afterWrite ? $afterWrite($writer, $linetype) :
+                $this->$linetype[] = $writer;
     }
 
     /**
@@ -203,7 +318,7 @@ class SchemaComposer
      * 
      * @return string
      */
-    protected function doOther(string $method, array $options)
+    protected function doOther(string $method, array $options = [])
     {
         return "->" . $method . "(" . $this->flatOptions($options);
     }
@@ -389,5 +504,24 @@ class SchemaComposer
         }
         $arrayed["unsigned"] = [];
         $this->preparedForeign =  $foreignArrayed ?? [];
+    }
+
+    /**
+     * Get Column Drop Schema
+     * @return array
+     */
+    protected function columnDropSchema()
+    {
+        return ["dropColumn" => []];
+    }
+
+    /**
+     * Get Foreign Drop Schema
+     * @param string $column
+     * @return array
+     */
+    protected function foreignDropSchema($column)
+    {
+        return ["dropForeign" => ["[{$column}]"]];
     }
 }

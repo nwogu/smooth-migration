@@ -431,4 +431,94 @@ class SchemaReader
         return $this->changelogs;
     }
 
+    /**
+     * Table Rename Changes
+     * @return array
+     */
+    public function tableRenames()
+    {
+        return $this->tableRenames;
+    } 
+
+    /**
+     * Column Rename Changes
+     * @return array
+     */
+    public function columnRenames()
+    {
+        return $this->columnRenames;
+    } 
+
+    /**
+     * Column Drop Changes
+     * @return array
+     */
+    public function columnDrops()
+    {
+        return $this->columnDrops;
+    } 
+
+    /**
+     * Column Add Changes
+     * @return array
+     */
+    public function columnAdds()
+    {
+        return $this->columnAdds;
+    } 
+
+     /**
+     * Column Defination Changes
+     * @return array
+     */
+    public function defChanges()
+    {
+        return $this->defChanges;
+    } 
+
+    /**
+     * Drop Foreign Key Changes
+     * @return array
+     */
+    public function dropForeigns()
+    {
+        return $this->dropForeigns;
+    }
+
+    /**
+     * Previoustable
+     * @return array
+     */
+    public function previousTable()
+    {
+        return $this->previousTable;
+    }
+
+    /**
+     * Currenttable
+     * @return array
+     */
+    public function currentTable()
+    {
+        return $this->currentTable;
+    }
+
+    /**
+     * Previousload
+     * @return array
+     */
+    public function previousLoad()
+    {
+        return $this->previousLoad;
+    }
+
+    /**
+     * Currentload
+     * @return array
+     */
+    public function currentLoad()
+    {
+        return $this->currentLoad;
+    }
+
 }
