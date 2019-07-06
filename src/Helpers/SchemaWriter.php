@@ -4,7 +4,7 @@ namespace Nwogu\SmoothMigration\Helpers;
 
 use Illuminate\Support\Str;
 use Nwogu\SmoothMigration\Abstracts\Schema;
-use Illuminate\Support\Facades\Schema as Builder;
+use Illuminate\Support\Facades\Schema as IlluminateSchema;
 use Nwogu\SmoothMigration\Helpers\SchemaComposer;
 use Nwogu\SmoothMigration\Helpers\Constants;
 
@@ -38,7 +38,7 @@ class SchemaWriter
      */
     protected function setaction()
     {
-        $this->action = Builder::exists($this->schema->table()) ? 
+        $this->action = IlluminateSchema::hasTable($this->schema->table()) ? 
             Constants::SCHEMA_UPDATE_ACTION :
             Constants::SCHEMA_CREATE_ACTION ;
     }
@@ -58,10 +58,19 @@ class SchemaWriter
      */
     public function migrationPath()
     {
-        return  database_path("migrations/") .
+        return  $this->migrationDirectory() .
                 date('Y_m_d_His') . "_" . 
                 Str::snake($this->migrationClass()) .
                 ".php";
+    }
+
+    /**
+     * Get Migration Directory
+     * @return string
+     */
+    public function migrationDirectory()
+    {
+        return  database_path("migrations/");
     }
 
     /**

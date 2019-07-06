@@ -20,6 +20,12 @@ class SchemaComposer
     protected $foreignLines = [];
 
     /**
+     * Prepared Foreign Methods
+     * @var array
+     */
+    protected $preparedForeign = [];
+
+    /**
      * Lines for Down method
      * @var array
      */
@@ -87,11 +93,12 @@ class SchemaComposer
     public function init()
     {
         $composeMethod = $this->composeMethods[$this->writer->action()];
-        if (is_callable($composeMethod)) {
+
+        if (method_exists($this, $composeMethod)) {
             return $this->$composeMethod();
         }
         foreach ($composeMethod as $callable) {
-            return !is_callable($callable) ?: $this->$callable();
+            return method_exists($this, $callable) ?: $this->$callable();
         }
     }
 
@@ -105,7 +112,7 @@ class SchemaComposer
      */
     protected function populateStub($action, $className, $table, $upwriter)
     {
-        $stub = $this->files->get(__DIR__ . "/stubs/$action.stub");
+        $stub = file_get_contents(__DIR__ . "/stubs/$action.stub");
 
         $stub = str_replace(
             "DummyClass", $className, $stub);
@@ -125,37 +132,43 @@ class SchemaComposer
     {
         foreach ($this->writer->schema->schemas() as $column => $schemas) {
             $this->composeUp($column, $schemas);
+            if (! empty($this->preparedForeign)) {
+                $this->composeUp($column, $this->preparedForeign, "foreignLines");
+                $this->preparedForeign = [];
+            }
         }
         $lines = array_merge_recursive($this->uplines, $this->foreignLines);
 
-        return $this->populateStub(Constant::SCHEMA_CREATE_ACTION, 
+        return $this->populateStub(Constants::SCHEMA_CREATE_ACTION, 
             $this->writer->migrationClass(), $this->writer->schema->table(), 
-            implode("\n", $lines));
+            implode("\n\t\t\t", $lines));
     }
 
     /**
      * Compose up migration method
      */
-    protected function composeUp($column, $schema)
+    protected function composeUp($column, $schema, $linetype = "uplines")
     {
-        foreach ($this->schemaArray($schema, $column) as 
-            $method => $options) {
-            $this->writeLine($method, $options, $column, "uplines");
+        $schema = is_array($schema) ? $schema : $this->schemaArray($schema, $column);
+        $writer = "\$table->";
+        foreach ($schema as $method => $options) {
+            $writer = $this->writeLine($method, $options, $column, $writer);
         }
+        $writer = $this->endWrite($writer);
+        $this->$linetype[] = $writer;
     }
 
     /**
      * Write a migration method line
-     * @param
+     * @return string
      */
     protected function writeLine(string $method, array $options, 
-        string $column, string $lineType, string $writer = "\$table->") {
+        string $column, string $writer = "\$table->") {
         if (! $this->doneFirst($writer)) {
-            $writer = $this->doFirst(
+            return $this->doFirst(
                 $writer, $method, $column, $options);
         }
-        $writer .= $this->doOther($method, $options);
-        $this->$lineType[] = $writer;
+        return $writer . $this->doOther($method, $options);
     }
 
     /**
@@ -165,7 +178,7 @@ class SchemaComposer
      */
     protected function doneFirst(string $schema)
     {
-        return len($schema) > 10;
+        return strlen($schema) > 10;
     }
 
     /**
@@ -179,7 +192,7 @@ class SchemaComposer
      */
     protected function doFirst(string $upwriter, string $method, string $column, array $options)
     {
-        return $upwriter . $method . "($column " . $this->flatOptions($options, true);
+        return $upwriter . $method . "({$this->qualify($column)}" . $this->flatOptions($options, true);
     }
 
     /**
@@ -195,6 +208,26 @@ class SchemaComposer
     }
 
     /**
+     * Qualifies a parameter method
+     * @param mixed $param
+     * @return $param
+     */
+    protected function qualify($param)
+    {
+        return is_numeric($param) || $this->isBool($param) ? $param: "'{$param}'";
+    }
+
+    /**
+     * Checks if a string literal is boolean
+     * @param mixed $param
+     * @return bool
+     */
+    protected function isBool($param)
+    {
+        return strtolower($param) == "true" || strtolower($param) == "false";
+    }
+
+    /**
      * Compose options into migration method
      * @param array $options
      * @param bool $addComma
@@ -202,11 +235,25 @@ class SchemaComposer
      */
     protected function flatOptions(array $options, $addComma = false)
     {
-        if (empty($options)) return ");";
+        if (empty($options)) return ")";
 
         $comma = $addComma ? ", " : "";
 
-        return $comma . implode(",", $options) . ");";
+        $qoptions = array_map(function($option) {
+            return $this->qualify($option);
+        }, $options);
+
+        return $comma . implode(",", $qoptions) . ")";
+    }
+
+    /**
+     * End a writen line
+     * @param string $writer
+     * @return string $writer
+     */
+    protected function endWrite(string $writer)
+    {
+        return $writer . ";";
     }
 
     /**
@@ -288,7 +335,7 @@ class SchemaComposer
         foreach ($arrayed as $stringed) {
             $methodOptions = $this->getOptions($stringed);
                 $keyedArray[$methodOptions[0]] = 
-                    $methodOptions[0];
+                    $methodOptions[1];
         }
         return $this->keyForeignSchema($keyedArray, $column);
     }
@@ -317,11 +364,7 @@ class SchemaComposer
     protected function keyForeignSchema(array $arrayed, string $column)
     {
         if (array_key_exists("on", $arrayed)) {
-            $foreignArrayed = $this->prepareForeignKey($arrayed);
-            foreach ($foreignArrayed as $method => $options) {
-                $this->writeLine($method, $options, $column, "foreignLines");
-            }
-
+            $this->prepareForeignKey($arrayed);
         }
         return $arrayed;
     }
@@ -329,7 +372,7 @@ class SchemaComposer
     /**
      * Prepare foreign keys to be writen to line
      * @param array $arrayed
-     * @return array $foreignKeyedArray
+     * @return void
      */
     protected function prepareForeignKey(array &$arrayed)
     {
@@ -342,6 +385,6 @@ class SchemaComposer
             unset($arrayed["onDelete"]);
         }
         $arrayed["unsigned"] = [];
-        return $foreignArrayed ?? [];
+        $this->preparedForeign =  $foreignArrayed ?? [];
     }
 }

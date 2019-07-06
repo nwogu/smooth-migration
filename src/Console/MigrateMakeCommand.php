@@ -119,8 +119,9 @@ class MigrateMakeCommand extends BaseCommand
                 $this->fetchSerializableData($instance)
             );
             $this->info("Serializer Updated Successfully");
+        } else {
+            $this->info("No Schema Change Detected For {$instance->basename()}");
         }
-        $this->info("No Schema Change Detected For {$instance->basename()}");
     }
 
     /**
@@ -135,7 +136,7 @@ class MigrateMakeCommand extends BaseCommand
         $this->createFile(
             $writer->migrationDirectory(),
             $writer->migrationPath(),
-            $writer->load()
+            $writer->write()
         );
     }
 
@@ -145,7 +146,7 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function modifySignature()
     {
-        $this->signature = str_replace("{name", "{name=''", $this->signature);
+        $this->signature = str_replace("{name", "{name='*'", $this->signature);
 
         $this->signature .= "{--smooth : Create a migration file from a Smooth Schema Class.}";
     }
@@ -156,7 +157,7 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function parentHandle()
     {
-        return empty($this->argument("name")) ?
+        return $this->argument("name") == "'*'" ?
 
                 $this->error("Name Argument is Required") :
                 

@@ -311,7 +311,7 @@ class SchemaReader
         $method = "push" . Str::studly($action) . "Action";
 
         if (method_exists($this, $method)) {
-            $this->$method($affected);
+            return $this->$method($affected);
         }
         throw new \Exception("Schema Read Method {$action} not supported");
     }
@@ -402,7 +402,7 @@ class SchemaReader
 
         $this->columnDrops = array_merge($this->columnDrops, $affected);
 
-        $changelog = count($this->columnDrops) . "Column(s) Dropped";
+        $changelog = count($this->columnDrops) . " Column(s) Dropped";
 
         array_push($this->changelogs, $changelog); 
     }
@@ -415,9 +415,9 @@ class SchemaReader
     {
         if (empty($affected)) return;
 
-        $this->columnAdds = array_merge($this->columnDrops, $affected);
+        $this->columnAdds = array_merge($this->columnAdds, $affected);
 
-        $changelog = count($this->columnDrops) . "Column(s) Added";
+        $changelog = count($this->columnAdds) . " Column(s) Added";
 
         array_push($this->changelogs, $changelog); 
     }
