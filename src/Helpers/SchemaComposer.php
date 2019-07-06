@@ -387,7 +387,6 @@ class SchemaComposer
             $foreignArrayed["onDelete"] = $arrayed["onDelete"];
             unset($arrayed["onDelete"]);
         }
-        dd($foreignArrayed);
         $arrayed["unsigned"] = [];
         $this->preparedForeign =  $foreignArrayed ?? [];
     }
