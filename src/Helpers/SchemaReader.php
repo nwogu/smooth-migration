@@ -422,4 +422,13 @@ class SchemaReader
         array_push($this->changelogs, $changelog); 
     }
 
+    /**
+     * Return Change Logs
+     * @return array
+     */
+    public function changelogs()
+    {
+        return $this->changelogs;
+    }
+
 }

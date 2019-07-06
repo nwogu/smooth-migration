@@ -110,6 +110,8 @@ class MigrateMakeCommand extends BaseCommand
 
             $this->writeSchema($instance);
 
+            $this->printChangeLog($instance->reader()->changelogs());
+
             $this->info("Migration Created Successfully");
             $this->info("Updating Serializer for {$instance->basename()}");
 
@@ -162,5 +164,17 @@ class MigrateMakeCommand extends BaseCommand
                 $this->error("Name Argument is Required") :
                 
                 parent::handle();
+    }
+
+    /**
+     * Print Change Logs To Terminal
+     * @param array $changelogs
+     * @return void
+     */
+    protected function printChangeLog(array $changelogs)
+    {
+        foreach ($changelogs as $log) {
+            $this->info($log);
+        }
     }
 }
