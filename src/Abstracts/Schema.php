@@ -19,6 +19,18 @@ abstract class Schema
      * @var bool
      */
     protected $autoIncrement = true;
+
+    /**
+     * Add Timestamps
+     * @var bool
+     */
+    protected $timestamps = true;
+
+    /**
+     * Add SoftDeletes
+     * @var bool
+     */
+    protected $softdeletes = true;
     
     /**
      * Specify SmoothSchema to run first.
@@ -58,13 +70,29 @@ abstract class Schema
     {
         $allVars = get_object_vars($this);
 
-        $schemas = Collection::make($allVars)->filter(function($vars, $key) {
+        !$this->autoIncrement ?: $schemas["id"] = "increments";
+
+        $baseschemas = Collection::make($allVars)->filter(function($vars, $key) {
             return !in_array($key, Constants::SCHEMA_DEFAULTS);
         })->all();
 
-        !$this->autoIncrement ?: $schemas["id"] = "increments";
-        
+        $this->addLastDefaults($schemas, $baseschemas);
+
         return $schemas;
+    }
+
+    /**
+     * Add Last Defaults To Schema
+     * @param $schema
+     * @return void
+     */
+    protected function addLastDefaults(&$schemas, $baseschemas)
+    {
+        $schemas = array_merge($schemas, $baseschemas);
+
+        !$this->softdeletes ?: $schemas["softDeletes"] = "softDeletes";
+
+        !$this->timestamps ?: $schemas["timestamps"] = "timestamps";
     }
 
     /**

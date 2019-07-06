@@ -192,7 +192,8 @@ class SchemaComposer
      */
     protected function doFirst(string $upwriter, string $method, string $column, array $options)
     {
-        return $upwriter . $method . "({$this->qualify($column)}" . $this->flatOptions($options, true);
+        $column = $method == $column ? '' : $this->qualify($column);
+        return $upwriter . $method . "($column" . $this->flatOptions($options, true);
     }
 
     /**
@@ -380,10 +381,13 @@ class SchemaComposer
             $foreignArrayed[$val] = $arrayed[$val] ?? [];
             if (isset($arrayed[$val])) unset($arrayed[$val]);
         }
+        ! empty($foreignArrayed["references"]) ?:
+            $foreignArrayed["references"] = ["id"];
         if (isset($arrayed["onDelete"])) {
             $foreignArrayed["onDelete"] = $arrayed["onDelete"];
             unset($arrayed["onDelete"]);
         }
+        dd($foreignArrayed);
         $arrayed["unsigned"] = [];
         $this->preparedForeign =  $foreignArrayed ?? [];
     }

@@ -12,7 +12,8 @@ class Constants
     const SMOOTH_SERIALIZER_FOLDER = "serializers";
 
     const SCHEMA_DEFAULTS = [
-        "table", "runFirst", "autoIncrement", "reader"
+        "table", "runFirst", "autoIncrement", "reader",
+        "softdeletes", "timestamps"
     ];
 
     const TABLE_RENAME_ACTION = "tableRename";
