@@ -28,6 +28,16 @@ class Constants
 
     const FOREIGN_DROP_ACTION = "dropForeign";
 
+    const FOREIGN_ADD_ACTION = "addForeign";
+
+    const DROP_PRIMARY_ACTION = "dropPrimary";
+
+    const DROP_UNIQUE_ACTION = "dropUnique";
+
+    const DROP_INDEX_ACTION = "dropIndex";
+
+    const DROP_MORPH_ACTION = "dropMorph";
+
     const TABLE_CHANGE_LOG = "table";
 
     const SCHEMA_CHANGE_LOG = "schema";
@@ -39,5 +49,13 @@ class Constants
     const FOREIGN_VALUES = [
         "foreign", "references", "on"
     ];
+
+    const SOFT_DELETE = "softDeletes";
+
+    const MORPHS = "morphs";
+
+    const REMEMBER_TOKEN = "remeberToken";
+
+    const TIMESTAMP = "timestamps";
 
 }

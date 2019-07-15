@@ -90,9 +90,9 @@ abstract class Schema
     {
         $schemas = array_merge($schemas, $baseschemas);
 
-        !$this->softdeletes ?: $schemas["softDeletes"] = "softDeletes";
+        !$this->softdeletes ?: $schemas[Constants::SOFT_DELETE] = Constants::SOFT_DELETE;
 
-        !$this->timestamps ?: $schemas["timestamps"] = "timestamps";
+        !$this->timestamps ?: $schemas[Constants::TIMESTAMP] = Constants::TIMESTAMP;
     }
 
     /**

@@ -56,6 +56,12 @@ class SchemaReader
     protected $columnDrops = [];
 
     /**
+     * Drop Morph Changes
+     * @var array
+     */
+    protected $dropMorphs = [];
+
+    /**
      * Column Add Changes
      * @var array
      */
@@ -72,6 +78,30 @@ class SchemaReader
      * @var array
      */
     protected $dropForeigns = [];
+
+    /**
+     * Drop Primary Key Changes
+     * @var array
+     */
+    protected $dropPrimaries = [];
+
+    /**
+     * Drop Unique Key Changes
+     * @var array
+     */
+    protected $dropUniques = [];
+
+    /**
+     * Drop Index Key Changes
+     * @var array
+     */
+    protected $dropIndices = [];
+
+    /**
+     * Add Foreign Key Changes
+     * @var array
+     */
+    protected $addForeigns = [];
 
     /**
      * Check if schema has changed
@@ -354,8 +384,15 @@ class SchemaReader
     {
         if (empty($affected)) return;
 
-        $shouldDropForeign = function ($previous, $current) {
-            if (in_array("on", $previous) && !in_array("on", $current)) {
+        $shouldDrop = function ($previous, $current, $value = "on") {
+            if (in_array($value, $previous) && !in_array($value, $current)) {
+                return true;
+            }
+            return false;
+        };
+
+        $shouldAddForeign = function ($previous, $current) {
+            if (!in_array("on", $previous) && in_array("on", $current)) {
                 return true;
             }
             return false;
@@ -363,14 +400,33 @@ class SchemaReader
 
         $column = $this->previousColumns[$affected[0]];
 
-        if ($shouldDropForeign($affected[1], $affected[2])) {
-            return $this->pushChanges(Constants::FOREIGN_DROP_ACTION, [
-                $affected[0],
+        if ($shouldDrop($affected[1], $affected[2])) {
+            $this->pushChanges(Constants::FOREIGN_DROP_ACTION, [
                 $column
             ]);
         }
 
-        array_push($this->defChanges, $affected[0]);
+        if ($shouldDrop($affected[1], $affected[2], "primary")) {
+            $this->pushChanges(Constants::DROP_PRIMARY_ACTION,[
+                $column]);
+        }
+
+        if ($shouldDrop($affected[1], $affected[2], "unique")) {
+            $this->pushChanges(Constants::DROP_UNIQUE_ACTION, [
+                $column]);
+        }
+
+        if ($shouldDrop($affected[1], $affected[2], "index")) {
+            $this->pushChanges(Constants::DROP_INDEX_ACTION,[
+                $column]);
+        }
+
+        if ($shouldAddForeign($affected[1], $affected[2])) {
+            $this->pushChanges(Constants::FOREIGN_ADD_ACTION, [
+                $column]);
+        }
+
+        array_push($this->defChanges, $column);
 
         $changelog = "Column '{$column}' schema altered";
 
@@ -378,6 +434,66 @@ class SchemaReader
     }
 
     /**
+     * Push Primary Drop Action
+     * @param array $affected
+     */
+    protected function pushDropPrimaryAction($affected = [])
+    {
+        if (empty($affected)) return;
+
+        array_push($this->dropPrimaries, $affected[0]);
+
+        $changelog = "Primary Key Dropped on ". $affected[0];
+
+        array_push($this->changelogs, $changelog);
+    }
+
+    /**
+     * Push Unique Drop Action
+     * @param array $affected
+     */
+    protected function pushDropUniqueAction($affected = [])
+    {
+        if (empty($affected)) return;
+
+        array_push($this->dropUniques, $affected[0]);
+
+        $changelog = "Unique Key Dropped on ". $affected[0];
+
+        array_push($this->changelogs, $changelog);
+    }
+
+    /**
+     * Push Index Drop Action
+     * @param array $affected
+     */
+    protected function pushDropIndexAction($affected = [])
+    {
+        if (empty($affected)) return;
+
+        array_push($this->dropIndices, $affected[0]);
+
+        $changelog = "Index Key Dropped on ". $affected[0];
+
+        array_push($this->changelogs, $changelog);
+    }
+
+    /**
+     * Push Foreign Drop Action
+     * @param array $affected
+     */
+    protected function pushAddForeignAction($affected = [])
+    {
+        if (empty($affected)) return;
+
+        array_push($this->addForeigns, $affected[0]);
+
+        $changelog = "Foreign Key added on ". $affected[0];
+
+        array_push($this->changelogs, $changelog);
+    }
+
+     /**
      * Push Foreign Drop Action
      * @param array $affected
      */
@@ -387,7 +503,22 @@ class SchemaReader
 
         array_push($this->dropForeigns, $affected[0]);
 
-        $changelog = "Foreign Key dropped on ". $affected[1];
+        $changelog = "Foreign Key dropped on ". $affected[0];
+
+        array_push($this->changelogs, $changelog);
+    }
+
+    /**
+     * Push polymorphic relationship drop action
+     * @param array $affected
+     */
+    protected function pushDropMorphAction($affected = [])
+    {
+        if (empty($affected)) return;
+
+        array_push($this->dropMorphs, $affected[0]);
+
+        $changelog = "Morphable Relationship dropped on ". $affected[0];
 
         array_push($this->changelogs, $changelog);
     }
@@ -399,6 +530,10 @@ class SchemaReader
     protected function pushColumnDropAction($affected = [])
     {
         if (empty($affected)) return;
+
+        $this->shouldPushForeign($affected, "previousLoad", false);
+
+        if ($this->shouldPushDropMorph($affected)) return;
 
         $this->columnDrops = array_merge($this->columnDrops, $affected);
 
@@ -415,12 +550,55 @@ class SchemaReader
     {
         if (empty($affected)) return;
 
+        $this->shouldPushForeign($affected, "currentLoad");
+
         $this->columnAdds = array_merge($this->columnAdds, $affected);
 
         $changelog = count($this->columnAdds) . " Column(s) Added";
 
         array_push($this->changelogs, $changelog); 
     }
+
+    /**
+     * Checks whether to push to foreign keys
+     * @param array
+     * @param bool
+     */
+    protected function shouldPushForeign(array $affected, $load, $addForeign = true)
+    {
+        foreach ($affected as $column) {
+            $arrayed = $this->schemaToArray(
+                $this->$load[$column] );
+            if (in_array("on", $arrayed) && $addForeign) {
+                $this->pushChanges(
+                    Constants::FOREIGN_ADD_ACTION, [$column]);
+            } else if (in_array("on", $arrayed) && !$addForeign) {
+                $this->pushChanges(
+                    Constants::FOREIGN_DROP_ACTION, [$column]);
+            }
+        }
+    }
+
+    /**
+     * Checks whether to push to drop morphs
+     * @param array
+     * @param bool
+     */
+    protected function shouldPushDropMorph(array $affected)
+    {
+        $pushed = false;
+        foreach ($affected as $column) {
+            $arrayed = $this->schemaToArray(
+                $this->previousLoad[$column] );
+            if (in_array("morphs", $arrayed) || in_array("nullableMorphs", $arrayed)) {
+                $this->pushChanges(
+                    Constants::DROP_MORPH_ACTION, [$column]);
+                $pushed = true;
+            }
+        }
+        return $pushed;
+    }
+
 
     /**
      * Return Change Logs
@@ -519,6 +697,51 @@ class SchemaReader
     public function currentLoad()
     {
         return $this->currentLoad;
+    }
+
+    /**
+     * Add Foreign Key Changes
+     * @return array
+     */
+    public function addForeigns()
+    {
+        return $this->addForeigns;
+    }
+
+    /**
+     * Drop Primary Key Changes
+     * @return array
+     */
+    public function dropPrimaries()
+    {
+        return $this->dropPrimaries;
+    }
+
+    /**
+     * Drop Unique Key Changes
+     * @return array
+     */
+    public function dropUniques()
+    {
+        return $this->dropUniques;
+    }
+
+    /**
+     * Drop Index Key Changes
+     * @return array
+     */
+    public function dropIndices()
+    {
+        return $this->dropIndices;
+    }
+
+    /**
+     * Drop Morph Changes
+     * @return array
+     */
+    public function dropMorphs()
+    {
+        return $this->dropMorphs;
     }
 
 }

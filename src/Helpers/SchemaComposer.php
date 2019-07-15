@@ -64,7 +64,10 @@ class SchemaComposer
         Constants::SCHEMA_UPDATE_ACTION => [
             Constants::DEF_CHANGE_ACTION, Constants::COLUMN_DROP_ACTION,
             Constants::COLUMN_ADD_ACTION, Constants::FOREIGN_DROP_ACTION,
-            Constants::COLUMN_RENAME_ACTION, Constants::TABLE_RENAME_ACTION
+            Constants::FOREIGN_ADD_ACTION, Constants::COLUMN_RENAME_ACTION,
+            Constants::TABLE_RENAME_ACTION, Constants::DROP_INDEX_ACTION,
+            Constants::DROP_PRIMARY_ACTION, Constants::DROP_UNIQUE_ACTION,
+            Constants::DROP_MORPH_ACTION
         ]
     ];
 
@@ -188,7 +191,7 @@ class SchemaComposer
     {
         foreach ($this->reader->columnDrops() as $column) {
             $this->compose(
-                $column, $this->columnDropSchema());
+                $column, $this->columnDropSchema($column));
             $this->compose(
                 $column, $this->reader->previousLoad()[$column],
                 "downlines");
@@ -205,7 +208,7 @@ class SchemaComposer
             $this->compose(
                 $column, $this->reader->currentLoad()[$column]);
             $this->compose(
-                $column, $this->columnDropSchema(),
+                $column, $this->columnDropSchema($column),
                 "downlines");
         }
     }
@@ -214,9 +217,13 @@ class SchemaComposer
      * Handle Foreign key Additions
      * @return void
      */
-    protected function foreignAdd()
+    protected function addForeign()
     {
-        //to do: write schemareader method to add foreign keys 
+        foreach ($this->reader->addForeigns() as $column) {
+            $this->schemaArray($this->reader->currentLoad()[$column], $column);
+            $this->composeForeign($column);
+            $this->compose($column, $this->foreignDropSchema($column), "downlines");
+        }
         
     }
 
@@ -226,7 +233,11 @@ class SchemaComposer
      */
     protected function dropForeign()
     {
-        
+        foreach ($this->reader->dropForeigns() as $column) {
+            $this->compose($column, $this->foreignDropSchema($column));
+            $this->schemaArray($this->reader->previousLoad()[$column], $column);
+            $this->composeForeign($column, "downlines");
+        }
     }
 
     /**
@@ -234,10 +245,10 @@ class SchemaComposer
      * @param string $column
      * @return void
      */
-    protected function composeForeign(string $column)
+    protected function composeForeign(string $column, $holderlines = "foreignLines")
     {
         if (! empty($this->preparedForeign)) {
-            $this->compose($column, $this->preparedForeign, "foreignLines");
+            $this->compose($column, $this->preparedForeign, $holderlines);
             $this->preparedForeign = [];
         }
     }
@@ -330,7 +341,8 @@ class SchemaComposer
      */
     protected function qualify($param)
     {
-        return is_numeric($param) || $this->isBool($param) ? $param: "'{$param}'";
+        return is_numeric($param) || 
+            $this->isBool($param) || $this->isArray($param) ? $param: "'{$param}'";
     }
 
     /**
@@ -341,6 +353,16 @@ class SchemaComposer
     protected function isBool($param)
     {
         return strtolower($param) == "true" || strtolower($param) == "false";
+    }
+
+    /**
+     * Checks if a string literal is an array
+     * @param mixed $param
+     * @return bool
+     */
+    protected function isArray($param)
+    {
+        return strpos($param, "[");
     }
 
     /**
@@ -510,8 +532,15 @@ class SchemaComposer
      * Get Column Drop Schema
      * @return array
      */
-    protected function columnDropSchema()
+    protected function columnDropSchema($column)
     {
+        if ($column == Constants::SOFT_DELETE) {
+            return ["dropSoftDeletes" => []];
+        } elseif ($column == Constants::TIMESTAMP) {
+            return ["dropTimestamps" => []];
+        } elseif ($column == Constants::REMEMBER_TOKEN) {
+            return ["dropRememberToken" => []];
+        }
         return ["dropColumn" => []];
     }
 
@@ -522,6 +551,28 @@ class SchemaComposer
      */
     protected function foreignDropSchema($column)
     {
-        return ["dropForeign" => ["[{$column}]"]];
+        $drop_syntax = $this->writer->schema->table() . "_" . $column . "_foreign";
+        return ["dropForeign" => [$drop_syntax]];
+    }
+
+    /**
+     * Get Primary Key Drop Schema
+     * @param string $column
+     * @return array
+     */
+    protected function primaryDropSchema($column)
+    {
+        $drop_syntax = $this->writer->schema->table() . "_" . $column . "_foreign";
+        return ["dropForeign" => [$drop_syntax]];
+    }
+
+     /**
+     * Get Drop Morph Schema
+     * @param string $column
+     * @return array
+     */
+    protected function dropMorphSchema($column)
+    {
+        return ["dropMorphs" => [$column]];
     }
 }
