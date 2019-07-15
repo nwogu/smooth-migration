@@ -533,9 +533,13 @@ class SchemaReader
 
         $this->shouldPushForeign($affected, "previousLoad", false);
 
-        if ($this->shouldPushDropMorph($affected)) return;
+        $this->shouldPushDropMorph($affected);
 
-        $this->columnDrops = array_merge($this->columnDrops, $affected);
+        $withoutMorphs = array_filter($affected, function($column){
+            return !in_array($column, $this->dropMorphs());
+        });
+
+        $this->columnDrops = array_merge($this->columnDrops, $withoutMorphs);
 
         $changelog = count($this->columnDrops) . " Column(s) Dropped";
 
@@ -582,21 +586,18 @@ class SchemaReader
     /**
      * Checks whether to push to drop morphs
      * @param array
-     * @param bool
+     * @return void
      */
     protected function shouldPushDropMorph(array $affected)
     {
-        $pushed = false;
         foreach ($affected as $column) {
             $arrayed = $this->schemaToArray(
                 $this->previousLoad[$column] );
             if (in_array("morphs", $arrayed) || in_array("nullableMorphs", $arrayed)) {
                 $this->pushChanges(
                     Constants::DROP_MORPH_ACTION, [$column]);
-                $pushed = true;
             }
         }
-        return $pushed;
     }
 
 

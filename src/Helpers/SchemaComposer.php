@@ -117,6 +117,23 @@ class SchemaComposer
     }
 
     /**
+     * Finish Composition
+     * @return string
+     */
+    protected function finalize()
+    {
+        $lines = array_merge_recursive($this->uplines, $this->foreignLines);
+
+        $downlines = $this->downlines ? 
+            implode("\n\t\t\t", $this->downlines) :
+            '';
+
+        return $this->populateStub($this->writer->action(), 
+            $this->writer->migrationClass(), $this->writer->schema->table(), 
+            implode("\n\t\t\t", $lines), $downlines);
+    }
+
+    /**
      * Replaces Stub holders with the appropriate values
      * @param string $action
      * @param string $className
@@ -124,7 +141,7 @@ class SchemaComposer
      * @param string $upwriter
      * @return string
      */
-    protected function populateStub($action, $className, $table, $upwriter)
+    protected function populateStub($action, $className, $table, $upwriter, $downwriter)
     {
         $stub = file_get_contents(__DIR__ . "/stubs/$action.stub");
 
@@ -135,6 +152,9 @@ class SchemaComposer
             "DummyTable", $table, $stub);
 
         $stub  = str_replace("UpWriter", $upwriter, $stub);
+
+        $stub = $action == Constants::SCHEMA_CREATE_ACTION ?
+            $stub : str_replace("DownWriter", $downwriter, $stub);
 
         return $stub;
     }
@@ -148,11 +168,6 @@ class SchemaComposer
             $this->compose($column, $schemas);
             $this->composeForeign($column);
         }
-        $lines = array_merge_recursive($this->uplines, $this->foreignLines);
-
-        return $this->populateStub(Constants::SCHEMA_CREATE_ACTION, 
-            $this->writer->migrationClass(), $this->writer->schema->table(), 
-            implode("\n\t\t\t", $lines));
     }
 
     /**
@@ -190,8 +205,9 @@ class SchemaComposer
     protected function columnDrop()
     {
         foreach ($this->reader->columnDrops() as $column) {
+            $dropSchema = $this->columnDropSchema($column);
             $this->compose(
-                $column, $this->columnDropSchema($column));
+                key($dropSchema), $dropSchema);
             $this->compose(
                 $column, $this->reader->previousLoad()[$column],
                 "downlines");
@@ -207,8 +223,9 @@ class SchemaComposer
         foreach ($this->reader->columnAdds() as $column) {
             $this->compose(
                 $column, $this->reader->currentLoad()[$column]);
+            $dropSchema = $this->columnDropSchema($column);
             $this->compose(
-                $column, $this->columnDropSchema($column),
+                key($dropSchema), $dropSchema,
                 "downlines");
         }
     }
@@ -222,7 +239,8 @@ class SchemaComposer
         foreach ($this->reader->addForeigns() as $column) {
             $this->schemaArray($this->reader->currentLoad()[$column], $column);
             $this->composeForeign($column);
-            $this->compose($column, $this->foreignDropSchema($column), "downlines");
+            $foreignDropSchema = $this->foreignDropSchema($column);
+            $this->compose(key($foreignDropSchema), $foreignDropSchema, "downlines");
         }
         
     }
@@ -234,9 +252,23 @@ class SchemaComposer
     protected function dropForeign()
     {
         foreach ($this->reader->dropForeigns() as $column) {
-            $this->compose($column, $this->foreignDropSchema($column));
+            $foreignDropSchema = $this->foreignDropSchema($column);
+            $this->compose(key($foreignDropSchema), $foreignDropSchema);
             $this->schemaArray($this->reader->previousLoad()[$column], $column);
             $this->composeForeign($column, "downlines");
+        }
+    }
+
+    /**
+     * Handle Drop of morphs
+     * @return void
+     */
+    protected function dropMorph()
+    {
+        foreach ($this->reader->dropMorphs() as $column) {
+            $dropMorphSchema = $this->dropMorphSchema($column);
+            $this->compose(key($dropMorphSchema), $dropMorphSchema);
+            $this->compose($column, $this->reader->previousLoad()[$column], "downlines");
         }
     }
 
@@ -319,7 +351,7 @@ class SchemaComposer
     protected function doFirst(string $upwriter, string $method, string $column, array $options)
     {
         $column = $method == $column ? '' : $this->qualify($column);
-        return $upwriter . $method . "($column" . $this->flatOptions($options, true);
+        return $upwriter . $method . "($column" . $this->flatOptions($options, ! empty($column));
     }
 
     /**
@@ -541,7 +573,7 @@ class SchemaComposer
         } elseif ($column == Constants::REMEMBER_TOKEN) {
             return ["dropRememberToken" => []];
         }
-        return ["dropColumn" => []];
+        return ["dropColumn" => [$column]];
     }
 
     /**
