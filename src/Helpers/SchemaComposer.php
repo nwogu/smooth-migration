@@ -65,8 +65,6 @@ class SchemaComposer
             Constants::DEF_CHANGE_ACTION, Constants::COLUMN_DROP_ACTION,
             Constants::COLUMN_ADD_ACTION, Constants::FOREIGN_DROP_ACTION,
             Constants::FOREIGN_ADD_ACTION, Constants::COLUMN_RENAME_ACTION,
-            Constants::TABLE_RENAME_ACTION, Constants::DROP_INDEX_ACTION,
-            Constants::DROP_PRIMARY_ACTION, Constants::DROP_UNIQUE_ACTION,
             Constants::DROP_MORPH_ACTION
         ]
     ];
@@ -227,6 +225,20 @@ class SchemaComposer
             $this->compose(
                 key($dropSchema), $dropSchema,
                 "downlines");
+        }
+    }
+
+     /**
+     * Handle Column Rename Action
+     * @return void
+     */
+    protected function columnRename()
+    {
+        foreach ($this->reader->columnRenames() as $previous => $current) {
+            $this->compose(
+                $previous, $this->columnRenameSchema($current));
+            $this->compose(
+                $current, $this->columnDropSchema($previous), "downlines");
         }
     }
 
@@ -606,5 +618,15 @@ class SchemaComposer
     protected function dropMorphSchema($column)
     {
         return ["dropMorphs" => [$column]];
+    }
+
+    /**
+     * Column Rename Schema
+     * @param string $column
+     * @return array
+     */
+    protected function columnRenameSchema($column)
+    {
+        return ["renameColumn" => [$column]];
     }
 }
