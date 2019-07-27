@@ -30,7 +30,7 @@ abstract class Schema
      * Add SoftDeletes
      * @var bool
      */
-    protected $softdeletes = true;
+    protected $softDeletes = true;
     
     /**
      * Specify SmoothSchema to run first.
@@ -90,7 +90,7 @@ abstract class Schema
     {
         $schemas = array_merge($schemas, $baseschemas);
 
-        !$this->softdeletes ?: $schemas[Constants::SOFT_DELETE] = Constants::SOFT_DELETE;
+        !$this->softDeletes ?: $schemas[Constants::SOFT_DELETE] = Constants::SOFT_DELETE;
 
         !$this->timestamps ?: $schemas[Constants::TIMESTAMP] = Constants::TIMESTAMP;
     }

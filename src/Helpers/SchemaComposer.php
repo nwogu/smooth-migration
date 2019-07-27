@@ -62,10 +62,10 @@ class SchemaComposer
     protected $composeMethods = [
         Constants::SCHEMA_CREATE_ACTION => Constants::SCHEMA_CREATE_ACTION,
         Constants::SCHEMA_UPDATE_ACTION => [
-            Constants::DEF_CHANGE_ACTION, Constants::COLUMN_DROP_ACTION,
-            Constants::COLUMN_ADD_ACTION, Constants::FOREIGN_DROP_ACTION,
-            Constants::FOREIGN_ADD_ACTION, Constants::COLUMN_RENAME_ACTION,
-            Constants::DROP_MORPH_ACTION
+            Constants::DEF_CHANGE_ACTION, Constants::COLUMN_ADD_ACTION, 
+            Constants::FOREIGN_DROP_ACTION, Constants::FOREIGN_ADD_ACTION, 
+            Constants::DROP_MORPH_ACTION, Constants::COLUMN_DROP_ACTION, 
+            Constants::COLUMN_RENAME_ACTION
         ]
     ];
 
@@ -105,11 +105,12 @@ class SchemaComposer
     {
         $composeMethod = $this->composeMethods[$this->writer->action()];
 
-        if (method_exists($this, $composeMethod)) {
-            return $this->$composeMethod();
-        }
-        foreach ($composeMethod as $callable) {
-            !method_exists($this, $callable) ?: $this->$callable();
+        if (is_string($composeMethod)) {
+            $this->$composeMethod();
+        } else {
+            foreach ($composeMethod as $callable) {
+                $this->$callable();
+            }
         }
         return $this->finalize();
     }
@@ -174,12 +175,12 @@ class SchemaComposer
      */
     protected function defChange()
     {
-        foreach ($this->reader->defChanges() as $column) {
+        foreach ($this->reader->defChanges() as $previous => $column) {
             $this->compose(
                 $column, $this->reader->currentLoad()[$column],
                 "uplines", false, $this->afterWrite());
             $this->compose(
-                $column, $this->reader->previousLoad()[$column],
+                $column, $this->reader->previousLoad()[$previous],
                 "downlines", false, $this->afterWrite());
             }
     }
@@ -209,6 +210,7 @@ class SchemaComposer
             $this->compose(
                 $column, $this->reader->previousLoad()[$column],
                 "downlines");
+            $this->composeForeign($column, "downlines");
         }
     }
 
@@ -238,7 +240,7 @@ class SchemaComposer
             $this->compose(
                 $previous, $this->columnRenameSchema($current));
             $this->compose(
-                $current, $this->columnDropSchema($previous), "downlines");
+                $current, $this->columnRenameSchema($previous), "downlines");
         }
     }
 

@@ -13,7 +13,7 @@ class Constants
 
     const SCHEMA_DEFAULTS = [
         "table", "runFirst", "autoIncrement", "reader",
-        "softdeletes", "timestamps"
+        "softDeletes", "timestamps"
     ];
 
     const TABLE_RENAME_ACTION = "tableRename";

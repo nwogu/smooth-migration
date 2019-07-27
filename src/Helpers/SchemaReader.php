@@ -388,17 +388,18 @@ class SchemaReader
             if (in_array($value, $previous) && !in_array($value, $current)) {
                 return true;
             }
-            return false;
+            return in_array("on", $previous) && in_array("on", $current);
         };
 
         $shouldAddForeign = function ($previous, $current) {
             if (!in_array("on", $previous) && in_array("on", $current)) {
                 return true;
             }
-            return false;
+            return in_array("on", $previous) && in_array("on", $current);
         };
 
-        $column = $this->previousColumns[$affected[0]];
+        $column = $this->currentColumns[$affected[0]];
+        $previousColumn = $this->previousColumns[$affected[0]];
 
         if ($shouldDrop($affected[1], $affected[2])) {
             $this->pushChanges(Constants::FOREIGN_DROP_ACTION, [
@@ -426,8 +427,8 @@ class SchemaReader
                 $column]);
         }
 
-        array_push($this->defChanges, $column);
-
+        $this->defChanges[$previousColumn] = $column;
+        
         $changelog = "Column '{$column}' schema altered";
 
         array_push($this->changelogs, $changelog);
@@ -531,8 +532,6 @@ class SchemaReader
     {
         if (empty($affected)) return;
 
-        $this->shouldPushForeign($affected, "previousLoad", false);
-
         $this->shouldPushDropMorph($affected);
 
         $withoutMorphs = array_filter($affected, function($column){
@@ -598,6 +597,19 @@ class SchemaReader
                     Constants::DROP_MORPH_ACTION, [$column]);
             }
         }
+    }
+
+    /**
+     * Checks whether foreign key methods has changed
+     */
+    protected function foreignKeySchemaHasChanged($previous, $current)
+    {
+        if (in_array("on", $previous) && in_array("on", $current)) {
+            if (array_diff($previous, $current) || array_diff($current, $previous)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
