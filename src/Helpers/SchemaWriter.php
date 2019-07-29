@@ -7,6 +7,7 @@ use Nwogu\SmoothMigration\Abstracts\Schema;
 use Illuminate\Support\Facades\Schema as IlluminateSchema;
 use Nwogu\SmoothMigration\Helpers\SchemaComposer;
 use Nwogu\SmoothMigration\Helpers\Constants;
+use Carbon\Carbon;
 
 class SchemaWriter
 {
@@ -23,6 +24,12 @@ class SchemaWriter
     protected $action;
 
     /**
+     * Migration Class Name
+     * @var string
+     */
+    protected $migrationClass;
+
+    /**
      * Construct
      * @var Schema $schema
      */
@@ -30,6 +37,7 @@ class SchemaWriter
     {
         $this->schema = $schema;
         $this->setaction();
+        $this->makeMigrationClass();
     }
 
     /**
@@ -59,7 +67,7 @@ class SchemaWriter
     public function migrationPath()
     {
         return  $this->migrationDirectory() .
-                date('Y_m_d_His') . "_" . 
+                date('Y_m_d_His') . $this->initials() . "_" . 
                 Str::snake($this->migrationClass()) .
                 ".php";
     }
@@ -79,8 +87,27 @@ class SchemaWriter
      */
     public function migrationClass()
     {
-        return Str::studly($this->schema->basename() . 
-            strtoupper(Str::random(5)) . "Table");
+        return $this->migrationClass;
+    }
+
+    /**
+     * Form a migration class
+     * @return $this
+     */
+    protected function makeMigrationClass()
+    {
+        $this->migrationClass = Str::studly($this->schema->basename() . "MigrationOn" . 
+            Carbon::now()->format("DMYhis"));
+    }
+
+
+    /**
+     * Single Aphabet generator
+     * @return string
+     */
+    public function initials()
+    {
+        return date_timestamp_get(new \DateTime("now"));
     }
 
     /**

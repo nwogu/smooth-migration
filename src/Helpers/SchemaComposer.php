@@ -650,11 +650,26 @@ class SchemaComposer
     }
 
     /**
+     * Checks if a column schema definition has morphs
+     * @param string $column
+     */
+    protected function hasMorphs(string $column)
+    {
+        $schema = $this->reader->currentLoad()[$column];
+        $arrayedSchema = $this->schemaArray($schema, $column);
+        return array_key_exists("morphs", $arrayedSchema) 
+            || array_key_exists("nullableMorphs", $arrayedSchema);
+    }
+
+    /**
      * Get Column Drop Schema
      * @return array
      */
     protected function columnDropSchema($column)
     {
+        if ($this->hasMorphs($column)) {
+            return $this->dropMorphSchema($column);
+        }
         if ($column == Constants::SOFT_DELETE) {
             return ["dropSoftDeletes" => []];
         } elseif ($column == Constants::TIMESTAMP) {

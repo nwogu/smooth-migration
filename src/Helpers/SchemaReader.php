@@ -158,7 +158,7 @@ class SchemaReader
     protected function read()
     {
         if ($this->previousTable != $this->currentTable) {
-            $this->pushChange(Constants::TABLE_RENAME_ACTION, [
+            $this->pushChange(Constants::TABLE_RENAME_UP_ACTION, [
                 $this->previousTable,
                 $this->currentTable
             ]);
@@ -178,7 +178,7 @@ class SchemaReader
     {
         if ($index < count($this->previousColumns)) {
             if ($this->previousColumns[$index] != $this->currentColumns[$index]) {
-                $this->pushChanges(Constants::COLUMN_RENAME_ACTION, [
+                $this->pushChanges(Constants::COLUMN_RENAME_UP_ACTION, [
                     $this->previousColumns[$index],
                     $this->currentColumns[$index]
                 ]);
@@ -198,7 +198,7 @@ class SchemaReader
             $previousSchemaArray = $this->schemaToArray($this->previousSchemas[$index]);
             $currentSchemaArray = $this->schemaToArray($this->currentSchemas[$index]);
             if ($this->schemaisDifferent($previousSchemaArray, $currentSchemaArray)) {
-                $this->pushChanges(Constants::DEF_CHANGE_ACTION, [
+                $this->pushChanges(Constants::DEF_CHANGE_UP_ACTION, [
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
@@ -237,10 +237,10 @@ class SchemaReader
         };
 
         if ($shouldDropColumn($previousCount, $currentCount)) {
-            $this->pushChanges(Constants::COLUMN_DROP_ACTION, array_diff(
+            $this->pushChanges(Constants::COLUMN_DROP_UP_ACTION, array_diff(
                 $this->previousColumns, $this->currentColumns));
         } else {
-            $this->pushChanges(Constants::COLUMN_ADD_ACTION, array_diff(
+            $this->pushChanges(Constants::COLUMN_ADD_UP_ACTION, array_diff(
                 $this->currentColumns, $this->previousColumns
             ));
         }
@@ -265,7 +265,7 @@ class SchemaReader
                 $this->currentLoad[$column]);
             $index = array_search($column, $this->currentColumns);
             if ($this->schemaisDifferent($previousSchemaArray, $currentSchemaArray)) {
-                $this->pushChanges(Constants::DEF_CHANGE_ACTION, [
+                $this->pushChanges(Constants::DEF_CHANGE_UP_ACTION, [
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
@@ -350,7 +350,7 @@ class SchemaReader
      * Push Table Rename Action
      * @param array $affected
      */
-    protected function pushTableRenameAction($affected = [])
+    protected function pushTableRenameUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -365,7 +365,7 @@ class SchemaReader
      * Push Column Rename Action
      * @param array $affected
      */
-    protected function pushColumnRenameAction($affected = [])
+    protected function pushColumnRenameUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -380,7 +380,7 @@ class SchemaReader
      * Push Column Defination Changes
      * @param array $index
      */
-    protected function pushDefChangeAction($affected = [])
+    protected function pushDefChangeUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -402,28 +402,28 @@ class SchemaReader
         $previousColumn = $this->previousColumns[$affected[0]];
 
         if ($shouldDrop($affected[1], $affected[2])) {
-            $this->pushChanges(Constants::FOREIGN_DROP_ACTION, [
+            $this->pushChanges(Constants::FOREIGN_DROP_UP_ACTION, [
                 $column
             ]);
         }
 
         if ($shouldDrop($affected[1], $affected[2], "primary")) {
-            $this->pushChanges(Constants::DROP_PRIMARY_ACTION,[
+            $this->pushChanges(Constants::DROP_PRIMARY_UP_ACTION,[
                 $column]);
         }
 
         if ($shouldDrop($affected[1], $affected[2], "unique")) {
-            $this->pushChanges(Constants::DROP_UNIQUE_ACTION, [
+            $this->pushChanges(Constants::DROP_UNIQUE_UP_ACTION, [
                 $column]);
         }
 
         if ($shouldDrop($affected[1], $affected[2], "index")) {
-            $this->pushChanges(Constants::DROP_INDEX_ACTION,[
+            $this->pushChanges(Constants::DROP_INDEX_UP_ACTION,[
                 $column]);
         }
 
         if ($shouldAddForeign($affected[1], $affected[2])) {
-            $this->pushChanges(Constants::FOREIGN_ADD_ACTION, [
+            $this->pushChanges(Constants::FOREIGN_ADD_UP_ACTION, [
                 $column]);
         }
 
@@ -438,7 +438,7 @@ class SchemaReader
      * Push Primary Drop Action
      * @param array $affected
      */
-    protected function pushDropPrimaryAction($affected = [])
+    protected function pushDropPrimaryUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -453,7 +453,7 @@ class SchemaReader
      * Push Unique Drop Action
      * @param array $affected
      */
-    protected function pushDropUniqueAction($affected = [])
+    protected function pushDropUniqueUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -468,7 +468,7 @@ class SchemaReader
      * Push Index Drop Action
      * @param array $affected
      */
-    protected function pushDropIndexAction($affected = [])
+    protected function pushDropIndexUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -483,7 +483,7 @@ class SchemaReader
      * Push Foreign Drop Action
      * @param array $affected
      */
-    protected function pushAddForeignAction($affected = [])
+    protected function pushAddForeignUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -498,7 +498,7 @@ class SchemaReader
      * Push Foreign Drop Action
      * @param array $affected
      */
-    protected function pushDropForeignAction($affected = [])
+    protected function pushDropForeignUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -513,7 +513,7 @@ class SchemaReader
      * Push polymorphic relationship drop action
      * @param array $affected
      */
-    protected function pushDropMorphAction($affected = [])
+    protected function pushDropMorphUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -528,7 +528,7 @@ class SchemaReader
      * Push Column Drop Changes
      * @param array $affected
      */
-    protected function pushColumnDropAction($affected = [])
+    protected function pushColumnDropUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -549,7 +549,7 @@ class SchemaReader
      * Push Column Add Changes
      * @param array $affected
      */
-    protected function pushColumnAddAction($affected = [])
+    protected function pushColumnAddUpAction($affected = [])
     {
         if (empty($affected)) return;
 
@@ -574,10 +574,10 @@ class SchemaReader
                 $this->$load[$column] );
             if (in_array("on", $arrayed) && $addForeign) {
                 $this->pushChanges(
-                    Constants::FOREIGN_ADD_ACTION, [$column]);
+                    Constants::FOREIGN_ADD_UP_ACTION, [$column]);
             } else if (in_array("on", $arrayed) && !$addForeign) {
                 $this->pushChanges(
-                    Constants::FOREIGN_DROP_ACTION, [$column]);
+                    Constants::FOREIGN_DROP_UP_ACTION, [$column]);
             }
         }
     }
@@ -594,7 +594,7 @@ class SchemaReader
                 $this->previousLoad[$column] );
             if (in_array("morphs", $arrayed) || in_array("nullableMorphs", $arrayed)) {
                 $this->pushChanges(
-                    Constants::DROP_MORPH_ACTION, [$column]);
+                    Constants::DROP_MORPH_UP_ACTION, [$column]);
             }
         }
     }

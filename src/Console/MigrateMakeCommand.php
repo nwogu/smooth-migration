@@ -15,6 +15,12 @@ class MigrateMakeCommand extends BaseCommand
     Use SmoothMigratable;
 
     /**
+     * Ran Migrations
+     * @var array
+     */
+    protected $ran = [];
+
+    /**
      * Create a new migration install command instance.
      *
      * @param  \Illuminate\Database\Migrations\MigrationCreator  $creator
@@ -55,6 +61,16 @@ class MigrateMakeCommand extends BaseCommand
     }
 
     /**
+     * Determine if a smooth migration should be run afresh.
+     *
+     * @return bool
+     */
+    protected function runFresh()
+    {
+        return $this->input->hasOption('fresh') && $this->option('fresh');
+    }
+
+    /**
      * Create Laravel's Default Migration Files
      * @return void
      */
@@ -92,7 +108,7 @@ class MigrateMakeCommand extends BaseCommand
     {
         foreach ($schema->runFirst() as $firstRun) {
 
-            $instance = $this->schemaInstance($firstRun, true);
+            $instance = $this->schemaInstance($firstRun);
 
             $this->writeNewSmoothMigration($instance);
         }
@@ -105,7 +121,12 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function writeNewSmoothMigration(Schema $instance)
     {
-        if ($instance->readSchema()->hasChanged()) {
+        if (in_array($instance->basename(), $this->ran)) return;
+        
+        $shouldRunMigration = $this->runFresh() ? 
+            $instance->readSchema() : $instance->readSchema()->hasChanged();
+
+        if ($shouldRunMigration) {
             $this->info("Writing Migration For {$instance->basename()}");
 
             $this->writeSchema($instance);
@@ -124,6 +145,8 @@ class MigrateMakeCommand extends BaseCommand
         } else {
             $this->info("No Schema Change Detected For {$instance->basename()}");
         }
+
+        array_push($this->ran, $instance->basename());
     }
 
     /**
@@ -151,6 +174,8 @@ class MigrateMakeCommand extends BaseCommand
         $this->signature = str_replace("{name", "{name='*'", $this->signature);
 
         $this->signature .= "{--smooth : Create a migration file from a Smooth Schema Class.}";
+
+        $this->signature .= "{--fresh : Force a fresh migration file from a Smooth Schema Class.}";
     }
 
     /**

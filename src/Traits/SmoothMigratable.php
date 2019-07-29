@@ -69,13 +69,26 @@ trait SmoothMigratable
      * @param bool $namespaced
      * @return Schema
      */
-    protected function schemaInstance($path, $namespaced = false)
+    protected function schemaInstance($path)
     {
         $class = $this->getSchemaName($path);
 
-        $namespaced ?: $this->files->requireOnce($path);
+        $path = $this->getSchemaFullPath($path);
+
+        $this->files->requireOnce($path);
 
         return new $class;
+    }
+
+    /**
+     * Get Schema Full Path
+     * @param string $path
+     */
+    protected function getSchemaFullPath(string $path)
+    {
+        $isFullPath = strpos($path, ".php");
+
+        return $isFullPath ? $path : $this->schemaDirectory() . $path . ".php";
     }
 
     /**
