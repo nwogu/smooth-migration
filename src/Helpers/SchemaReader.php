@@ -183,9 +183,9 @@ class SchemaReader
                     $this->currentColumns[$index]
                 ]);
             }
-            $this->readByColumn($index = $index + 1);
+            return $this->readByColumn($index = $index + 1);
         }
-        $this->readBySchema();
+        return $this->readBySchema();
     }
 
     /**
@@ -202,7 +202,7 @@ class SchemaReader
                     $index, $previousSchemaArray, $currentSchemaArray
                 ]);
             }
-            $this->readBySchema($index = $index + 1);
+            return $this->readBySchema($index = $index + 1);
 
         }
     }
@@ -280,21 +280,21 @@ class SchemaReader
     protected function schemaToArray($schema)
     {
         $hasForeign = function ($schema) {
-            return strpos($schema, "on=");
+            return strpos($schema, "on:");
         };
 
         $hasReference = function ($schema) {
-            return strpos($schema, "references=");
+            return strpos($schema, "references:");
         };
 
         $hasOptions = function ($schema) {
-            return strpos($schema, "=");
+            return strpos($schema, ":");
         };
 
         $getOptions = function ($schema) use ($hasOptions){
             if ($index = $hasOptions($schema)) {
 
-                $options = explode(" ", trim(\substr($schema, $index + 1)));
+                $options = explode(",", trim(\substr($schema, $index + 1)));
 
                 $method = trim(\substr($schema, 0, $index));
 
@@ -305,13 +305,13 @@ class SchemaReader
             return [trim($schema)];
         };
 
-        $arrayedSchema = explode("," , $schema);
+        $arrayedSchema = explode("|" , $schema);
 
         $finalSchema = [];
 
         if ($hasForeign($schema)) {
             if (! $hasReference($schema)) {
-                array_push($arrayedSchema, "references=id");
+                array_push($arrayedSchema, "references:id");
             }
         }
 

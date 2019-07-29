@@ -3,6 +3,7 @@
 namespace Nwogu\SmoothMigration\Abstracts;
 
 use Illuminate\Support\Collection;
+use Nwogu\SmoothMigration\Definition;
 use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Helpers\SchemaReader;
 
@@ -25,12 +26,6 @@ abstract class Schema
      * @var bool
      */
     protected $timestamps = true;
-
-    /**
-     * Add SoftDeletes
-     * @var bool
-     */
-    protected $softDeletes = true;
     
     /**
      * Specify SmoothSchema to run first.
@@ -68,31 +63,15 @@ abstract class Schema
      */
     public function schemas()
     {
-        $allVars = get_object_vars($this);
+        $definition = new Definition;
 
-        !$this->autoIncrement ?: $schemas["id"] = "increments";
+        ! $this->autoIncrement ?: $definition->id = "increments";
 
-        $baseschemas = Collection::make($allVars)->filter(function($vars, $key) {
-            return !in_array($key, Constants::SCHEMA_DEFAULTS);
-        })->all();
+        $this->define($definition);
 
-        $this->addLastDefaults($schemas, $baseschemas);
+        ! $this->timestamps ?: $definition->{Constants::TIMESTAMP} = Constants::TIMESTAMP;
 
-        return $schemas;
-    }
-
-    /**
-     * Add Last Defaults To Schema
-     * @param $schema
-     * @return void
-     */
-    protected function addLastDefaults(&$schemas, $baseschemas)
-    {
-        $schemas = array_merge($schemas, $baseschemas);
-
-        !$this->softDeletes ?: $schemas[Constants::SOFT_DELETE] = Constants::SOFT_DELETE;
-
-        !$this->timestamps ?: $schemas[Constants::TIMESTAMP] = Constants::TIMESTAMP;
+        return get_object_vars($definition);
     }
 
     /**
@@ -175,4 +154,9 @@ abstract class Schema
         return substr(static::class, 0, 
                 strpos(static::class, Constants::SMOOTH_SCHEMA_FILE));
     }
+
+    /**
+     * Schema Definitions
+     */
+    abstract protected function define(Definition $definition);
 }

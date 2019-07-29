@@ -37,8 +37,8 @@ trait SmoothMigratable
      */
     protected function serializerDirectory()
     {
-        return config("smooth.serializer_path", $this->schemaDirectory() .
-                Constants::SMOOTH_SERIALIZER_FOLDER . DIRECTORY_SEPARATOR);
+        return config("smooth.serializer_path", $this->laravel->databasePath() .
+            DIRECTORY_SEPARATOR . Constants::SMOOTH_SERIALIZER_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -49,8 +49,7 @@ trait SmoothMigratable
     protected function schemaDirectory()
     {
         return config("smooth.schema_path", $this->laravel->databasePath() .
-                DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR .
-                Constants::SMOOTH_SCHEMA_FOLDER . DIRECTORY_SEPARATOR);
+                DIRECTORY_SEPARATOR . Constants::SMOOTH_SCHEMA_FOLDER . DIRECTORY_SEPARATOR);
     }
 
     /**

@@ -79,7 +79,8 @@ class SchemaWriter
      */
     public function migrationClass()
     {
-        return Str::studly($this->schema->basename() . "Table");
+        return Str::studly($this->schema->basename() . 
+            strtoupper(Str::random(5)) . "Table");
     }
 
     /**

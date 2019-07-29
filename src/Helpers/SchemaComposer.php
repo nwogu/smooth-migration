@@ -62,10 +62,14 @@ class SchemaComposer
     protected $composeMethods = [
         Constants::SCHEMA_CREATE_ACTION => Constants::SCHEMA_CREATE_ACTION,
         Constants::SCHEMA_UPDATE_ACTION => [
-            Constants::DEF_CHANGE_ACTION, Constants::COLUMN_ADD_ACTION, 
-            Constants::FOREIGN_DROP_ACTION, Constants::FOREIGN_ADD_ACTION, 
-            Constants::DROP_MORPH_ACTION, Constants::COLUMN_DROP_ACTION, 
-            Constants::COLUMN_RENAME_ACTION
+            Constants::DEF_CHANGE_UP_ACTION, Constants::COLUMN_ADD_UP_ACTION, 
+            Constants::FOREIGN_DROP_UP_ACTION, Constants::FOREIGN_ADD_UP_ACTION, 
+            Constants::DROP_MORPH_UP_ACTION, Constants::COLUMN_DROP_UP_ACTION, 
+            Constants::COLUMN_RENAME_UP_ACTION,
+            Constants::DEF_CHANGE_DOWN_ACTION, Constants::COLUMN_ADD_DOWN_ACTION, 
+            Constants::FOREIGN_ADD_DOWN_ACTION, Constants::FOREIGN_DROP_DOWN_ACTION, 
+            Constants::DROP_MORPH_DOWN_ACTION, Constants::COLUMN_DROP_DOWN_ACTION, 
+            Constants::COLUMN_RENAME_DOWN_ACTION,
         ]
     ];
 
@@ -170,15 +174,25 @@ class SchemaComposer
     }
 
     /**
-     * Handle Column Definition changes
+     * Handle Column Definition changes for Up Method
      * @return void
      */
-    protected function defChange()
+    protected function defChangeUp()
     {
         foreach ($this->reader->defChanges() as $previous => $column) {
             $this->compose(
                 $column, $this->reader->currentLoad()[$column],
                 "uplines", false, $this->afterWrite());
+            }
+    }
+
+    /**
+     * Handle Column Definition changes for Down Method
+     * @return void
+     */
+    protected function defChangeDown()
+    {
+        foreach ($this->reader->defChanges() as $previous => $column) {
             $this->compose(
                 $column, $this->reader->previousLoad()[$previous],
                 "downlines", false, $this->afterWrite());
@@ -198,15 +212,25 @@ class SchemaComposer
     }
 
     /**
-     * Handle Column Drops
+     * Handle Column Drops For Up Method
      * @return void
      */
-    protected function columnDrop()
+    protected function columnDropUp()
     {
         foreach ($this->reader->columnDrops() as $column) {
             $dropSchema = $this->columnDropSchema($column);
             $this->compose(
                 key($dropSchema), $dropSchema);
+        }
+    }
+
+    /**
+     * Handle Column Drops for down method
+     * @return void
+     */
+    protected function columnDropDown()
+    {
+        foreach ($this->reader->columnDrops() as $column) {
             $this->compose(
                 $column, $this->reader->previousLoad()[$column],
                 "downlines");
@@ -215,14 +239,24 @@ class SchemaComposer
     }
 
     /**
-     * Handle Column Additions
+     * Handle Column Additions for up method
      * @return void
      */
-    protected function columnAdd()
+    protected function columnAddUp()
     {
         foreach ($this->reader->columnAdds() as $column) {
             $this->compose(
                 $column, $this->reader->currentLoad()[$column]);
+        }
+    }
+
+    /**
+     * Handle Column Additions for down method
+     * @return void
+     */
+    protected function columnAddDown()
+    {
+        foreach ($this->reader->columnAdds() as $column) {
             $dropSchema = $this->columnDropSchema($column);
             $this->compose(
                 key($dropSchema), $dropSchema,
@@ -231,28 +265,49 @@ class SchemaComposer
     }
 
      /**
-     * Handle Column Rename Action
+     * Handle Column Rename Action for Up Method
      * @return void
      */
-    protected function columnRename()
+    protected function columnRenameUp()
     {
         foreach ($this->reader->columnRenames() as $previous => $current) {
             $this->compose(
                 $previous, $this->columnRenameSchema($current));
+        }
+    }
+
+    /**
+     * Handle Column Rename Action for Down Method
+     * @return void
+     */
+    protected function columnRenameDown()
+    {
+        foreach ($this->reader->columnRenames() as $previous => $current) {
             $this->compose(
                 $current, $this->columnRenameSchema($previous), "downlines");
         }
     }
 
     /**
-     * Handle Foreign key Additions
+     * Handle Foreign key Additions For Up Method
      * @return void
      */
-    protected function addForeign()
+    protected function addForeignUp()
     {
         foreach ($this->reader->addForeigns() as $column) {
             $this->schemaArray($this->reader->currentLoad()[$column], $column);
             $this->composeForeign($column);
+        }
+        
+    }
+
+    /**
+     * Handle Foreign key Additions for down method
+     * @return void
+     */
+    protected function addForeignDown()
+    {
+        foreach ($this->reader->addForeigns() as $column) {
             $foreignDropSchema = $this->foreignDropSchema($column);
             $this->compose(key($foreignDropSchema), $foreignDropSchema, "downlines");
         }
@@ -260,28 +315,48 @@ class SchemaComposer
     }
 
     /**
-     * Handle Drop of Foreign keys
+     * Handle Drop of Foreign keys for up method
      * @return void
      */
-    protected function dropForeign()
+    protected function dropForeignUp()
     {
         foreach ($this->reader->dropForeigns() as $column) {
             $foreignDropSchema = $this->foreignDropSchema($column);
             $this->compose(key($foreignDropSchema), $foreignDropSchema);
+        }
+    }
+
+    /**
+     * Handle Drop of Foreign keys for down method
+     * @return void
+     */
+    protected function dropForeignDown()
+    {
+        foreach ($this->reader->dropForeigns() as $column) {
             $this->schemaArray($this->reader->previousLoad()[$column], $column);
             $this->composeForeign($column, "downlines");
         }
     }
 
     /**
-     * Handle Drop of morphs
+     * Handle Drop of morphs for up method
      * @return void
      */
-    protected function dropMorph()
+    protected function dropMorphUp()
     {
         foreach ($this->reader->dropMorphs() as $column) {
             $dropMorphSchema = $this->dropMorphSchema($column);
             $this->compose(key($dropMorphSchema), $dropMorphSchema);
+        }
+    }
+
+    /**
+     * Handle Drop of morphs for down method
+     * @return void
+     */
+    protected function dropMorphDown()
+    {
+        foreach ($this->reader->dropMorphs() as $column) {
             $this->compose($column, $this->reader->previousLoad()[$column], "downlines");
         }
     }
@@ -465,7 +540,7 @@ class SchemaComposer
      */
     protected function hasForeign(string $schema)
     {
-        return strpos($schema, "on=");
+        return strpos($schema, "on:");
     }
 
     /**
@@ -475,7 +550,7 @@ class SchemaComposer
      */
     protected function hasReference(string $schema)
     {
-        return strpos($schema, "references=");
+        return strpos($schema, "references:");
     }
 
     /**
@@ -485,7 +560,7 @@ class SchemaComposer
      */
     protected function hasOption(string $schema)
     {
-        return strpos($schema, "=");
+        return strpos($schema, ":");
     }
 
     /**
@@ -495,7 +570,7 @@ class SchemaComposer
      */
     protected function arrayed(string $schema)
     {
-        return explode(",", $schema);
+        return explode("|", $schema);
     }
 
     /**
@@ -505,7 +580,7 @@ class SchemaComposer
      */
     protected function addReference(array $arrayed)
     {
-        array_push($arrayed, "references=id");
+        array_push($arrayed, "references:id");
     }
 
     /**
@@ -532,7 +607,7 @@ class SchemaComposer
     protected function getOptions(string $stringed)
     {
         if ($index = $this->hasOption($stringed)) {
-            $options = explode(" ", trim(\substr($stringed, $index + 1)));
+            $options = explode(",", trim(\substr($stringed, $index + 1)));
             $method = trim(\substr($stringed, 0, $index));
             return [$method, $options];
         }
