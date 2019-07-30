@@ -30,12 +30,20 @@ class SchemaWriter
     protected $migrationClass;
 
     /**
-     * Construct
-     * @var Schema $schema
+     * Run Count
+     * @var int
      */
-    public function __construct(Schema $schema)
+    protected $runCount;
+
+    /**
+     * Construct
+     * @param Schema $schema
+     * @param int $runCount
+     */
+    public function __construct(Schema $schema, int $runCount)
     {
         $this->schema = $schema;
+        $this->runCount = $runCount;
         $this->setaction();
         $this->makeMigrationClass();
     }
@@ -67,7 +75,7 @@ class SchemaWriter
     public function migrationPath()
     {
         return  $this->migrationDirectory() .
-                date('Y_m_d_His') . $this->initials() . "_" . 
+                date('Y_m_d_His') . $this->runCount . "_" . 
                 Str::snake($this->migrationClass()) .
                 ".php";
     }
@@ -98,16 +106,6 @@ class SchemaWriter
     {
         $this->migrationClass = Str::studly($this->schema->basename() . "MigrationOn" . 
             Carbon::now()->format("DMYhis"));
-    }
-
-
-    /**
-     * Single Aphabet generator
-     * @return string
-     */
-    public function initials()
-    {
-        return date_timestamp_get(new \DateTime("now"));
     }
 
     /**

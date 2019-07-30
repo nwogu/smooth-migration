@@ -9,6 +9,7 @@ use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
+use Exception;
 
 class MigrateMakeCommand extends BaseCommand
 {
@@ -19,6 +20,12 @@ class MigrateMakeCommand extends BaseCommand
      * @var array
      */
     protected $ran = [];
+
+    /**
+     * Run Count
+     * @var int
+     */
+    protected $runCount = 1;
 
     /**
      * Create a new migration install command instance.
@@ -61,16 +68,6 @@ class MigrateMakeCommand extends BaseCommand
     }
 
     /**
-     * Determine if a smooth migration should be run afresh.
-     *
-     * @return bool
-     */
-    protected function runFresh()
-    {
-        return $this->input->hasOption('fresh') && $this->option('fresh');
-    }
-
-    /**
      * Create Laravel's Default Migration Files
      * @return void
      */
@@ -110,6 +107,14 @@ class MigrateMakeCommand extends BaseCommand
 
             $instance = $this->schemaInstance($firstRun);
 
+            $schemaClass = get_class($schema);
+
+            if (in_array($schemaClass, $instance->runFirst())) {
+                $this->error(
+                    "Circular Reference Error, {$schemaClass} specified to run first in $firstRun");
+                    exit();
+            }
+
             $this->writeNewSmoothMigration($instance);
         }
     }
@@ -122,14 +127,17 @@ class MigrateMakeCommand extends BaseCommand
     protected function writeNewSmoothMigration(Schema $instance)
     {
         if (in_array($instance->basename(), $this->ran)) return;
-        
-        $shouldRunMigration = $this->runFresh() ? 
-            $instance->readSchema() : $instance->readSchema()->hasChanged();
 
-        if ($shouldRunMigration) {
+        if ($instance->readSchema()->hasChanged()) {
             $this->info("Writing Migration For {$instance->basename()}");
 
-            $this->writeSchema($instance);
+            try {
+                $this->writeSchema($instance); 
+            }
+            catch (\Exception $e) {
+                $this->error($e->getMessage());
+                exit();
+            }
 
             $this->printChangeLog($instance->reader()->changelogs());
 
@@ -156,13 +164,15 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function writeSchema(Schema $schemaInstance)
     {
-        $writer = new SchemaWriter($schemaInstance);
+        $writer = new SchemaWriter($schemaInstance, $this->runCount);
 
         $this->createFile(
             $writer->migrationDirectory(),
             $writer->migrationPath(),
             $writer->write()
         );
+
+        $this->runCount++;
     }
 
      /**
@@ -173,9 +183,7 @@ class MigrateMakeCommand extends BaseCommand
     {
         $this->signature = str_replace("{name", "{name='*'", $this->signature);
 
-        $this->signature .= "{--smooth : Create a migration file from a Smooth Schema Class.}";
-
-        $this->signature .= "{--fresh : Force a fresh migration file from a Smooth Schema Class.}";
+        $this->signature .= "{--s|smooth : Create a migration file from a Smooth Schema Class.}";
     }
 
     /**

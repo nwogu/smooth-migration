@@ -215,12 +215,7 @@ class SchemaReader
      */
     protected function schemaIsDifferent($previous, $current)
     {
-        if (empty(array_diff($previous, $current)) && 
-                empty(array_diff($current, $previous))) {
-                return false;
-            }
-
-        return true;
+        return ! ($previous == $current);
     }
 
     /**

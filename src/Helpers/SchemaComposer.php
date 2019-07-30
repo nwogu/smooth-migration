@@ -6,6 +6,7 @@ use Closure;
 use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Helpers\SchemaReader;
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
+use Exception;
 
 class SchemaComposer
 {
@@ -439,6 +440,7 @@ class SchemaComposer
      */
     protected function doFirst(string $upwriter, string $method, string $column, array $options)
     {
+        $this->verifyMethod($method);
         $column = $method == $column ? '' : $this->qualify($column);
         return $upwriter . $method . "($column" . $this->flatOptions($options, ! empty($column));
     }
@@ -581,6 +583,18 @@ class SchemaComposer
     protected function addReference(array $arrayed)
     {
         array_push($arrayed, "references:id");
+    }
+
+    /**
+     * Verify Blueprint Method
+     * @param string $method;
+     */
+    protected function verifyMethod(string $method)
+    {
+        if (! method_exists(
+            \Illuminate\Database\Schema\Blueprint::class, $method)) {
+            throw new Exception("Method: {$method} not found"); 
+        }
     }
 
     /**
