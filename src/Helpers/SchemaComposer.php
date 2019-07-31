@@ -63,12 +63,12 @@ class SchemaComposer
     protected $composeMethods = [
         Constants::SCHEMA_CREATE_ACTION => Constants::SCHEMA_CREATE_ACTION,
         Constants::SCHEMA_UPDATE_ACTION => [
-            Constants::DEF_CHANGE_UP_ACTION, Constants::COLUMN_ADD_UP_ACTION, 
-            Constants::FOREIGN_DROP_UP_ACTION, Constants::FOREIGN_ADD_UP_ACTION, 
+            Constants::FOREIGN_DROP_UP_ACTION, Constants::COLUMN_ADD_UP_ACTION, 
+            Constants::DEF_CHANGE_UP_ACTION, Constants::FOREIGN_ADD_UP_ACTION, 
             Constants::DROP_MORPH_UP_ACTION, Constants::COLUMN_DROP_UP_ACTION, 
             Constants::COLUMN_RENAME_UP_ACTION,
-            Constants::DEF_CHANGE_DOWN_ACTION, Constants::COLUMN_ADD_DOWN_ACTION, 
-            Constants::FOREIGN_ADD_DOWN_ACTION, Constants::FOREIGN_DROP_DOWN_ACTION, 
+            Constants::FOREIGN_ADD_DOWN_ACTION, Constants::COLUMN_ADD_DOWN_ACTION, 
+            Constants::DEF_CHANGE_DOWN_ACTION, Constants::FOREIGN_DROP_DOWN_ACTION, 
             Constants::DROP_MORPH_DOWN_ACTION, Constants::COLUMN_DROP_DOWN_ACTION, 
             Constants::COLUMN_RENAME_DOWN_ACTION,
         ]
@@ -128,13 +128,35 @@ class SchemaComposer
     {
         $lines = array_merge_recursive($this->uplines, $this->foreignLines);
 
-        $downlines = $this->downlines ? 
-            implode("\n\t\t\t", $this->downlines) :
-            '';
+        $downlines = $this->downlines ?? [];
+
+        if ($this->writer->action() == Constants::SCHEMA_UPDATE_ACTION) {
+            $lines = $this->composeWithBuilder($lines);
+            $downlines = $this->composeWithBuilder($downlines);
+            $lines = implode("\n\t\t", $lines);
+            $downlines = implode("\n\t\t", $downlines);
+        } else {
+            $lines = implode("\n\t\t\t", $lines);
+            $downlines = "";
+        }
 
         return $this->populateStub($this->writer->action(), 
             $this->writer->migrationClass(), $this->writer->schema->table(), 
-            implode("\n\t\t\t", $lines), $downlines);
+            $lines, $downlines);
+    }
+
+    /**
+     * Compose with Schema Builder
+     * @return array
+     */
+    protected function composeWithBuilder(array $lines)
+    {
+        $stub = file_get_contents(__DIR__ . "/stubs/schema_table.stub");
+
+        return \Illuminate\Support\Collection::make($lines)->map(function($line) use ($stub){
+            $stub = str_replace("DummyTable", $this->writer->schema->table(), $stub);
+            return str_replace("Writer", $line, $stub);
+        })->all();
     }
 
     /**
@@ -152,13 +174,17 @@ class SchemaComposer
         $stub = str_replace(
             "DummyClass", $className, $stub);
 
-        $stub = str_replace(
-            "DummyTable", $table, $stub);
-
-        $stub  = str_replace("UpWriter", $upwriter, $stub);
-
-        $stub = $action == Constants::SCHEMA_CREATE_ACTION ?
-            $stub : str_replace("DownWriter", $downwriter, $stub);
+        switch ($action) {
+            case Constants::SCHEMA_CREATE_ACTION:
+                $stub = str_replace(
+                    "DummyTable", $table, $stub);
+                $stub  = str_replace("UpWriter", $upwriter, $stub);
+            break;
+            case Constants::SCHEMA_UPDATE_ACTION:
+                $stub  = str_replace("UpWriter", $upwriter, $stub);
+                $stub = str_replace("DownWriter", $downwriter, $stub);
+            break;
+        }
 
         return $stub;
     }
