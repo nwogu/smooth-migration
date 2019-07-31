@@ -24,7 +24,7 @@ The default schema directory is in database/schemas
 ## Usage:
 
 Create a schema file for your table with the command and pass it the table name:  
-```php artisan smooth:create products```
+```php artisan smooth:create product```
 
 This will create a schema template for you to define your migrations:  
 ```
@@ -142,11 +142,30 @@ class ProductSchema extends Schema
      */
     protected $timestamps = false
     
+```  
+## Running Migrations in Order  
+
+You can specify which schema to run first with the ```runFirst``` property  
+
 ```
+class ProductSchema extends Schema
+{
+    /**
+     * Auto Incrementing Id
+     * @var bool
+     */
+    protected $runFirst = [
+        OutletSchema::class,
+        TaxSchema::class
+    ];
+    
+```   
+However, you can't specify a ```runFirst``` for a schema if already defined in the parent schema, take the example above:  
+The runFirst property of OutletSchema Class or TaxSchema Class cannot contain the ProductSchema Class. 
 
-## Updating Schema Files
+## Updating Schemas
 
-Make changes to your schema files directly.
+Make changes to your schema class directly.
 
 Run the ```php artisan make: migration -s``` command, this will generate the appropriate migration files.
 
