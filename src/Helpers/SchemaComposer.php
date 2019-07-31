@@ -64,9 +64,9 @@ class SchemaComposer
         Constants::SCHEMA_CREATE_ACTION => Constants::SCHEMA_CREATE_ACTION,
         Constants::SCHEMA_UPDATE_ACTION => [
             Constants::FOREIGN_DROP_UP_ACTION, Constants::COLUMN_ADD_UP_ACTION, 
+            Constants::COLUMN_RENAME_UP_ACTION,
             Constants::DEF_CHANGE_UP_ACTION, Constants::FOREIGN_ADD_UP_ACTION, 
             Constants::DROP_MORPH_UP_ACTION, Constants::COLUMN_DROP_UP_ACTION, 
-            Constants::COLUMN_RENAME_UP_ACTION,
             Constants::FOREIGN_ADD_DOWN_ACTION, Constants::COLUMN_ADD_DOWN_ACTION, 
             Constants::DEF_CHANGE_DOWN_ACTION, Constants::FOREIGN_DROP_DOWN_ACTION, 
             Constants::DROP_MORPH_DOWN_ACTION, Constants::COLUMN_DROP_DOWN_ACTION, 
