@@ -110,8 +110,6 @@ abstract class Schema
         
         $serializeLoad['schemas'] = $this->schemas();
 
-        $serializeLoad['timestamp'] = time();
-
         return $serializeLoad;
     }
 

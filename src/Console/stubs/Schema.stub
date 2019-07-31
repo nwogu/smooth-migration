@@ -16,7 +16,7 @@ class {{SMOOTH_SCHEMA_CLASS}} extends Schema
      /**
      * Specify Schema to run first.
      *
-     * @array
+     * @var array
      */
      protected $runFirst = [
 
@@ -25,6 +25,7 @@ class {{SMOOTH_SCHEMA_CLASS}} extends Schema
 
     /**
      * Schema Definitions
+     * @param \Nwogu\SmoothMigration\Definition
      */
     protected function define(Definition $definition)
     {
