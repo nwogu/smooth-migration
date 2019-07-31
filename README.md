@@ -70,7 +70,79 @@ class ProductSchema extends Schema
 
 To generate the migrations from the schemas, call the ```php artisan make:migration -s``` command
 
-This command will generate the appropriate migration files.
+This command will generate the appropriate migration files.  
+
+## Supported Schema Definitions  
+
+```
+$definition->id = "bigIncrements";
+$definition->votes = "bigInteger";
+$definition->data = "binary";
+$definition->confirmed = "boolean";
+$definition->name = "char:100";
+$definition->created_at = "date";
+$definition->created_at = "dateTime";
+$definition->amount = "decimal:8,2";
+$definition->amount = "double:8,2";
+$definition->amount = "float:8,2";
+$definition->positions = "geometry";
+$definition->positions = "geometryCollection";
+$definition->votes = "integer";
+$definition->visitor = "ipAddress";
+$definition->options = "json";
+$definition->options = "jsonb";
+$definition->positions = "lineString";
+$definition->description = "longText";
+$definition->device = "macAddress";
+$definition->id = "mediumIncrements";
+$definition->votes = "mediumInteger";
+$definition->description = "mediumText";
+$definition->taggable = "morphs";
+$definition->positions = "multiLineString";
+$definition->positions = "multiPoint";
+$definition->positions = "multiPolygon";
+$definition->taggable = "nullableMorphs";
+$definition->position = "point";
+$definition->positions = "polygon";
+$definition->rememberToken = "rememberToken";
+$definition->id = "smallIncrements";
+$definition->votes = "smallInteger";
+$definition->softDeletes = "softDeletes";
+$definition->name = "string:100";
+$definition->description = "text";
+$definition->sunrise = "time";
+$definition->sunrise = "timeTz";
+$definition->added_on = "timestamp";
+$definition->added_on = "timestampTz";
+$definition->id = "tinyIncrements";
+$definition->votes = "tinyInteger";
+$definition->votes = "unsignedBigInteger";
+$definition->amount = "unsignedDecimal:8,2";
+$definition->votes = "unsignedInteger";
+$definition->votes = "unsignedMediumInteger";
+$definition->votes = "unsignedSmallInteger";
+$definition->votes = "unsignedTinyInteger";
+$definition->id = "uuid";
+$definition->birth_year = "year";
+```  
+Auto Increments and timestamps are inserted by default, to disable this, specify the attributes in your schema class:  
+
+```
+class ProductSchema extends Schema
+{
+    /**
+     * Auto Incrementing Id
+     * @var bool
+     */
+    protected $autoIncrement = false
+    
+    /**
+     * Add Timestamps
+     * @var bool
+     */
+    protected $timestamps = false
+    
+```
 
 ## Updating Schema Files
 
