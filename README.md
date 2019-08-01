@@ -62,6 +62,7 @@ class ProductSchema extends Schema
         $definition->is_active = "integer|default:true";
         $definition->description = "text|nullable";
         $definition->fileable = "morphs";
+        $definition->user_id = "integer|on:users|onDelete:cascade";
     }
 
 }
