@@ -79,4 +79,6 @@ class Constants
 
     const TIMESTAMP = "timestamps";
 
+    const SMOOTH_TABLE = "smooth_migrations";
+
 }

@@ -3,10 +3,24 @@
 namespace Nwogu\SmoothMigration\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Console\SmoothCreateCommand;
+use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
 
 class SmoothMigrationProvider extends ServiceProvider
 {
+
+    /**
+     * Register SmoothMigration Services
+     * @return void
+     */
+    public function register()
+    {
+        $this->app->singleton(SmoothMigrationRepository::class, function($app) {
+            return new SmoothMigrationRepository($app["db"], Constants::SMOOTH_TABLE);
+        });
+    }
+
     /**
      * Bootstrap any application services.
      *

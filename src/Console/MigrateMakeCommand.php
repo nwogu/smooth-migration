@@ -2,14 +2,15 @@
 
 namespace Nwogu\SmoothMigration\Console;
 
+use Exception;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Collection;
-use Nwogu\SmoothMigration\Traits\SmoothMigratable;
-use Illuminate\Database\Migrations\MigrationCreator;
-use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
-use Exception;
+use Nwogu\SmoothMigration\Traits\SmoothMigratable;
+use Illuminate\Database\Migrations\MigrationCreator;
+use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
+use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
 
 class MigrateMakeCommand extends BaseCommand
 {
@@ -28,19 +29,35 @@ class MigrateMakeCommand extends BaseCommand
     protected $runCount = 1;
 
     /**
+     * SmoothMigratoionRepository
+     * @var SmoothMigrationRepository
+     */
+    protected $repository;
+
+    /**
      * Create a new migration install command instance.
      *
      * @param  \Illuminate\Database\Migrations\MigrationCreator  $creator
      * @param  \Illuminate\Support\Composer  $composer
+     * @param \Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository $repository
      * @return void
      */
-    public function __construct(MigrationCreator $creator, Composer $composer)
+    public function __construct(
+        MigrationCreator $creator, 
+        Composer $composer, 
+        SmoothMigrationRepository $repository
+        )
     {
+        $this->repository = $repository;
+
+        $this->repository->setSource(config("database.default"));
+
         $this->makeFile();
 
         $this->modifySignature();
         
         parent::__construct($creator, $composer);
+
     }
 
     /**
@@ -73,6 +90,8 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function writeSmoothMigration()
     {
+        $this->prepareDatabase();
+
         foreach ($this->getSchemaFiles() as $path) {
 
             $instance = $this->schemaInstance($path);
@@ -184,6 +203,8 @@ class MigrateMakeCommand extends BaseCommand
         $this->signature = str_replace("{name", "{name='*'", $this->signature);
 
         $this->signature .= "{--s|smooth : Create a migration file from a Smooth Schema Class.}";
+
+        $this->signature .= "{--co|correct : Correct a migration file that has already run.}";
     }
 
     /**
@@ -208,6 +229,18 @@ class MigrateMakeCommand extends BaseCommand
     {
         foreach ($changelogs as $log) {
             $this->info($log);
+        }
+    }
+
+    /**
+     * Prepare database to persist smooth migration info that has been run
+     */
+    protected function prepareDatabase()
+    {
+        if (! $this->repository->repositoryExists()) {
+            $this->call(
+                'smooth:install'
+            );
         }
     }
 }
