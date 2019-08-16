@@ -16,10 +16,10 @@ abstract class Schema
     protected $table;
 
     /**
-     * Auto Incrementing Id
-     * @var bool
+     * Primary Key Id
+     * @var string|null
      */
-    protected $autoIncrement = true;
+    protected $idField = "increments";
 
     /**
      * Add Timestamps
@@ -65,7 +65,7 @@ abstract class Schema
     {
         $definition = new Definition;
 
-        ! $this->autoIncrement ?: $definition->id = "increments";
+        ! $this->idField ?: $definition->id = $this->idField;
 
         $this->define($definition);
 
