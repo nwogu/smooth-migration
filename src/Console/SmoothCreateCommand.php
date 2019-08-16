@@ -50,7 +50,7 @@ class SmoothCreateCommand extends Command
 
         $this->composer = $composer;
 
-        $this->makeFile();
+        $this->makeDependencies();
     }
 
     /**
@@ -64,20 +64,18 @@ class SmoothCreateCommand extends Command
             $this->schemaDirectory(), 
             $this->schemaPath(), $this->populateStub());
 
-        $this->info('Schema Class created successfully!');
+        $this->info('Schema Class created');
 
-        $this->info('Creating Schema Serializer...');
-
-        $this->createFile(
-            $this->serializerDirectory(),
-            $this->serializerPath(), $this->fetchSerializableData(
-                $this->schemaPath()
-            )
+        $this->repository->log(
+            $this->getSchemaName($this->schemaPath()),
+            $this->fetchSerializableData($this->schemaPath())
         );
 
-        $this->info('Schema Serializer created successfully!');
+        $this->info('Dumping Autoload, Please wait...!');
 
         $this->composer->dumpAutoloads();
+
+        $this->info('Process Completed...!');
     }
 
     /**

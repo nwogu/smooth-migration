@@ -6,10 +6,10 @@ use Exception;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Collection;
 use Nwogu\SmoothMigration\Abstracts\Schema;
+use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
 use Nwogu\SmoothMigration\Traits\SmoothMigratable;
 use Illuminate\Database\Migrations\MigrationCreator;
-use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand as BaseCommand;
 
 class MigrateMakeCommand extends BaseCommand
@@ -29,30 +29,15 @@ class MigrateMakeCommand extends BaseCommand
     protected $runCount = 1;
 
     /**
-     * SmoothMigratoionRepository
-     * @var SmoothMigrationRepository
-     */
-    protected $repository;
-
-    /**
      * Create a new migration install command instance.
      *
      * @param  \Illuminate\Database\Migrations\MigrationCreator  $creator
      * @param  \Illuminate\Support\Composer  $composer
-     * @param \Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository $repository
      * @return void
      */
-    public function __construct(
-        MigrationCreator $creator, 
-        Composer $composer, 
-        SmoothMigrationRepository $repository
-        )
+    public function __construct(MigrationCreator $creator, Composer $composer)
     {
-        $this->repository = $repository;
-
-        $this->repository->setSource(config("database.default"));
-
-        $this->makeFile();
+        $this->makeDependencies();
 
         $this->modifySignature();
         
@@ -85,12 +70,21 @@ class MigrateMakeCommand extends BaseCommand
     }
 
     /**
+     * Determine if a smooth migration should be corrected.
+     *
+     * @return bool
+     */
+    protected function shouldCorrectMigration()
+    {
+        return $this->input->hasOption('correct') && $this->option('correct');
+    }
+
+    /**
      * Create Laravel's Default Migration Files
      * @return void
      */
     protected function writeSmoothMigration()
     {
-        $this->prepareDatabase();
 
         foreach ($this->getSchemaFiles() as $path) {
 
@@ -147,11 +141,13 @@ class MigrateMakeCommand extends BaseCommand
     {
         if (in_array($instance->basename(), $this->ran)) return;
 
+        $schemaClass = $this->getSchemaClass($instance);
+
         if ($instance->readSchema()->hasChanged()) {
-            $this->info("Writing Migration For {$instance->basename()}");
+            $this->info("Writing Migration For {$schemaClass}");
 
             try {
-                $this->writeSchema($instance); 
+                $migrationPath = $this->writeSchema($instance); 
             }
             catch (\Exception $e) {
                 $this->error($e->getMessage());
@@ -160,17 +156,21 @@ class MigrateMakeCommand extends BaseCommand
 
             $this->printChangeLog($instance->reader()->changelogs());
 
-            $this->info("Migration Created Successfully");
-            $this->info("Updating Serializer for {$instance->basename()}");
+            $this->info("Migration for {$schemaClass} Created Successfully");
+            $this->info("Updating Log...");
 
-            $this->createFile(
-                $this->serializerDirectory(),
-                $instance->serializePath(),
-                $this->fetchSerializableData($instance)
+            $this->repository->log(
+                $schemaClass,
+                $this->fetchSerializableData($instance),
+                $migrationPath,
+                $this->repository->getNextBatchNumber(
+                    $schemaClass
+                )
             );
-            $this->info("Serializer Updated Successfully");
+            
+            $this->info("Log for {$schemaClass} Updated Successfully");
         } else {
-            $this->info("No Schema Change Detected For {$instance->basename()}");
+            $this->info("No Schema Change Detected For {$schemaClass}");
         }
 
         array_push($this->ran, $instance->basename());
@@ -179,19 +179,25 @@ class MigrateMakeCommand extends BaseCommand
     /**
      * Write Migration File
      * @param Schema $schemaInstance
-     * @return void
+     * @return string $migrationPath
      */
     protected function writeSchema(Schema $schemaInstance)
     {
         $writer = new SchemaWriter($schemaInstance, $this->runCount);
 
+        $migrationPath = $this->shouldCorrectMigration() 
+            ? $this->repository->getLastMigration()
+            : $writer->migrationPath();
+
         $this->createFile(
             $writer->migrationDirectory(),
-            $writer->migrationPath(),
+            $migrationPath,
             $writer->write()
         );
 
         $this->runCount++;
+
+        return $migrationPath;
     }
 
      /**
@@ -233,14 +239,14 @@ class MigrateMakeCommand extends BaseCommand
     }
 
     /**
-     * Prepare database to persist smooth migration info that has been run
+     * Get Schema Class
+     * @param Schema $schema
+     * 
+     * @return string $schemaClass
      */
-    protected function prepareDatabase()
+    protected function constructSchemaClass(Schema $schema)
     {
-        if (! $this->repository->repositoryExists()) {
-            $this->call(
-                'smooth:install'
-            );
-        }
+        return $schema->basename() . Constants::SMOOTH_SCHEMA_FILE;
     }
+
 }

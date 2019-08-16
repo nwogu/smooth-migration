@@ -17,7 +17,9 @@ class SmoothMigrationProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(SmoothMigrationRepository::class, function($app) {
-            return new SmoothMigrationRepository($app["db"], Constants::SMOOTH_TABLE);
+            $repository = new SmoothMigrationRepository($app["db"], Constants::SMOOTH_TABLE);
+            $repository->setSource(config("database.default"));
+            return $repository;
         });
     }
 

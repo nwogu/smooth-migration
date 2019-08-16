@@ -70,14 +70,27 @@ class SmoothMigrationRepository
 
     /**
      * Get the last migration batch.
+     * @param string $schemaClass
      *
-     * @return array
+     * @return object
      */
-    public function getLast()
+    public function getLast(string $schemaClass)
     {
-        $query = $this->table()->where('batch', $this->getLastBatchNumber());
+        return $this->table()->where('schema_class', $schemaClass)
+            ->where('batch', $this->getLastBatchNumber())->first();
+    }
 
-        return $query->orderBy('migration', 'desc')->get()->all();
+    /**
+     * Get the last migration path
+     * @param string $schemaClass
+     * 
+     * @return string|bool $migrationPath
+     */
+    public function getLastMigration(string $schemaClass)
+    {
+        $lastRun = $this->getLast($schemaClass);
+
+        return $lastRun ? $lastRun->migration_path : false;
     }
 
     /**
@@ -96,13 +109,20 @@ class SmoothMigrationRepository
     /**
      * Log that a migration was run.
      *
-     * @param  string  $file
-     * @param  int  $batch
+     * @param  string  $schemaClass
+     * @param  string  $schemaLoad
+     * @param string|null $migrationPath
+     * @param int $batch
      * @return void
      */
-    public function log($file, $batch)
+    public function log($schemaClass, $schemaLoad, $migrationPath = null, $batch = 0)
     {
-        $record = ['migration' => $file, 'batch' => $batch];
+        $record = [
+            'schema_class' => $schemaClass, 
+            'schema_load' => $schemaLoad,
+            'migration_path' => $migrationPath,
+            'batch' => $batch
+        ];
 
         $this->table()->insert($record);
     }
@@ -120,22 +140,25 @@ class SmoothMigrationRepository
 
     /**
      * Get the next migration batch number.
+     * @param string $schemaClass
      *
      * @return int
      */
-    public function getNextBatchNumber()
+    public function getNextBatchNumber(string $schemaClass)
     {
-        return $this->getLastBatchNumber() + 1;
+        return $this->getLastBatchNumber($schemaClass) + 1;
     }
 
     /**
      * Get the last migration batch number.
+     * @param string $schemaClass
      *
      * @return int
      */
-    public function getLastBatchNumber()
+    public function getLastBatchNumber(string $schemaClass)
     {
-        return $this->table()->max('batch');
+        return $this->table()->where("schema_class", $schemaClass)
+                ->max('batch');
     }
 
     /**
@@ -152,7 +175,9 @@ class SmoothMigrationRepository
             // migrations have actually run for the application. We'll create the
             // table to hold the migration file's path as well as the batch ID.
             $table->increments('id');
-            $table->string('migration');
+            $table->string('schema_class');
+            $table->longText('schema_load');
+            $table->string('migration_path')->nullable();
             $table->integer('batch');
         });
     }

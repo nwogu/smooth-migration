@@ -5,6 +5,7 @@ namespace Nwogu\SmoothMigration\Traits;
 use Illuminate\Filesystem\Filesystem;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Nwogu\SmoothMigration\Helpers\Constants;
+use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
 
 /**
  * SmoothMigratable
@@ -19,15 +20,42 @@ trait SmoothMigratable
     protected $files;
 
     /**
+     * The Smooth Migration Repository
+     * 
+     * @var \Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository
+     */
+    protected $repository;
+
+    /**
      * Create Filesytem Instance.
      *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
+     * @return  \Illuminate\Filesystem\Filesystem  $files
      */
     public function makeFile()
     {
-
         $this->files = app()->make(Filesystem::class);
+    }
+
+    /**
+     * Resolve an instance of Smooth Migration Repository
+     * 
+     * @return \Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository
+     */
+    public function makeRepository()
+    {
+        $this->repository = app()->make(SmoothMigrationRepository::class);
+        $this->prepareDatabase();
+    }
+
+    /**
+     * Initialize neccesary dependency properties
+     * 
+     * @return void
+     */
+    public function makeDependencies()
+    {
+        $this->makeFile();
+        $this->makeRepository();
     }
 
     /**
@@ -58,7 +86,7 @@ trait SmoothMigratable
      * @param  string  $path
      * @return string
      */
-    protected function getSchemaName($path)
+    public function getSchemaName($path)
     {
         return str_replace('.php', '', basename($path));
     }
@@ -119,6 +147,18 @@ trait SmoothMigratable
                     $directory);
         }
         $this->files->put($file, $data);
+    }
+
+    /**
+     * Prepare database to persist smooth migration info that has been run
+     */
+    protected function prepareDatabase()
+    {
+        if (! $this->repository->repositoryExists()) {
+            $this->call(
+                'smooth:install'
+            );
+        }
     }
     
 }

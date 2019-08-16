@@ -2,14 +2,11 @@
 
 namespace Nwogu\SmoothMigration\Console;
 
-use Illuminate\Support\Str;
 use Illuminate\Console\Command;
-use Illuminate\Support\Composer;
 use Nwogu\SmoothMigration\Helpers\Constants;
-use Nwogu\SmoothMigration\Traits\SmoothMigratable;
 use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
 
-class SmoothCreateCommand extends Command
+class SmoothInstallCommand extends Command
 {
 
     /**
@@ -24,7 +21,7 @@ class SmoothCreateCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'smooth:create';
+    protected $signature = 'smooth:install';
 
     /**
      * The console command description.
@@ -59,8 +56,6 @@ class SmoothCreateCommand extends Command
      */
     public function handle()
     {
-        $this->repository->setSource(config("database.default"));
-
         $this->repository->createRepository();
     }
 
