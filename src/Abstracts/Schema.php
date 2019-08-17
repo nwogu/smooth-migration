@@ -89,18 +89,6 @@ abstract class Schema
     }
 
     /**
-     * Get Saved Schema Load for Migration
-     * @return array
-     */
-    public function savedSchemaLoad()
-    {
-        return json_decode(
-            file_get_contents($this->serializePath()),
-            true
-        );
-    }
-
-    /**
      * Get Current Schema Load for Migration
      * @return array
      */
@@ -120,20 +108,6 @@ abstract class Schema
     public function hasChanged()
     {
         return $this->reader->hasChanged();
-    }
-
-    /**
-     * Read Schema Changes
-     * @return SchemaReader
-     */
-    public function readSchema()
-    {
-        $this->reader = new SchemaReader(
-            $this->savedSchemaLoad(),
-            $this->currentSchemaLoad()
-        );
-
-        return $this;
     }
 
     /**
