@@ -7,6 +7,7 @@ use Illuminate\Support\Composer;
 use Illuminate\Support\Collection;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Nwogu\SmoothMigration\Helpers\Constants;
+use Nwogu\SmoothMigration\Helpers\SchemaReader;
 use Nwogu\SmoothMigration\Helpers\SchemaWriter;
 use Nwogu\SmoothMigration\Traits\SmoothMigratable;
 use Illuminate\Database\Migrations\MigrationCreator;
@@ -164,7 +165,7 @@ class MigrateMakeCommand extends BaseCommand
 
             $instance = $this->schemaInstance($firstRun);
 
-            $schemaClass = get_class($schema);
+            $schemaClass = $schema->className();
 
             if (in_array($schemaClass, $instance->runFirst())) {
                 $this->error(
@@ -187,7 +188,9 @@ class MigrateMakeCommand extends BaseCommand
 
         $schemaClass = $instance->className();
 
-        if ($instance->readSchema()->hasChanged()) {
+        $this->readSchema($instance);
+
+        if ($instance->hasChanged()) {
             $this->info("Writing Migration For {$schemaClass}");
 
             try {
@@ -218,6 +221,55 @@ class MigrateMakeCommand extends BaseCommand
         }
 
         array_push($this->ran, $instance->className());
+    }
+
+    /**
+     * Read Schema Changes
+     * @param Schema $instance
+     * @return void
+     */
+    protected function readSchema(Schema $instance)
+    {
+        $previousSchemaload = $this->repository->previousSchemaLoad(
+            $instance->className(),
+            $this->getBatch($instance));
+            
+        $schemaReader = new SchemaReader(
+            $previousSchemaload, $instance->currentSchemaLoad());
+        $instance->setReader($schemaReader);
+    }
+
+    /**
+     * Get smooth migration batch
+     * @param Schema $instance
+     * @return int $batch
+     */
+    protected function getBatch(Schema $instance)
+    {
+        return $this->shouldCorrectMigration($instance) 
+            ? $this->repository->reduceBatchNumber($instance) 
+            : $this->repository->getLastBatchNumber($instance);
+    }
+
+    /**
+     * Parse batch number from option
+     * @return int $batch
+     */
+    protected function parseBatchOption()
+    {
+        return explode(".", $this->option('correct'))[1] ?? 1;
+    }
+
+    /**
+     * Reduce batch number
+     * @param Schema $instance
+     * @return int
+     */
+    protected function reduceBatchNumber(Schema $instance)
+    {
+        $batchNumber = $this->repository->getLastBatchNumber($instance) - 
+                        $this->parseBatchOption();
+        return $batchNumber < 0 ? 1 : $batchNumber;
     }
 
     /**
