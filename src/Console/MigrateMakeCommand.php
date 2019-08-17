@@ -71,12 +71,56 @@ class MigrateMakeCommand extends BaseCommand
 
     /**
      * Determine if a smooth migration should be corrected.
+     * @param Schema $schema
      *
      * @return bool
      */
-    protected function shouldCorrectMigration()
+    protected function shouldCorrectMigration(Schema $schema)
+    {
+        return !$this->hasCorrectionBeenRequested()
+                ?: $this->isCorrectionForSchema($schema);
+    }
+
+    /**
+     * Determine if a smooth migration correction has been requested.
+     *
+     * @return bool
+     */
+    protected function hasCorrectionBeenRequested()
     {
         return $this->input->hasOption('correct') && $this->option('correct');
+    }
+
+    /**
+     * Determine if a corection is meant for a schema.
+     *
+     * @return bool
+     */
+    protected function isCorrectionForSchema(Schema $schema)
+    {
+        return $this->parseCorrectionOption() == "all" 
+            || $schema->className() == $this->transformOptionToSchemaClassName();
+    }
+
+    /**
+     * Parse option for correction
+     * @return string $table
+     */
+    protected function parseCorrectionOption()
+    {
+        return explode(".", $this->option('correct'))[0];
+    }
+
+    /**
+     * Transform table to schema class name
+     * @return string
+     */
+    protected function transformOptionToSchemaClassName()
+    {
+        return \Illuminate\Support\Str::studly(
+            $this->parseCorrectionOption() 
+            . Constants::SMOOTH_SCHEMA_FILE
+        );
     }
 
     /**
@@ -139,9 +183,9 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function writeNewSmoothMigration(Schema $instance)
     {
-        if (in_array($instance->basename(), $this->ran)) return;
+        if (in_array($instance->className(), $this->ran)) return;
 
-        $schemaClass = $this->getSchemaClass($instance);
+        $schemaClass = $instance->className();
 
         if ($instance->readSchema()->hasChanged()) {
             $this->info("Writing Migration For {$schemaClass}");
@@ -173,7 +217,7 @@ class MigrateMakeCommand extends BaseCommand
             $this->info("No Schema Change Detected For {$schemaClass}");
         }
 
-        array_push($this->ran, $instance->basename());
+        array_push($this->ran, $instance->className());
     }
 
     /**
@@ -185,8 +229,11 @@ class MigrateMakeCommand extends BaseCommand
     {
         $writer = new SchemaWriter($schemaInstance, $this->runCount);
 
-        $migrationPath = $this->shouldCorrectMigration() 
-            ? $this->repository->getLastMigration()
+        $schemaClass = $schemaInstance->className();
+
+        $migrationPath = $this->shouldCorrectMigration($schemaInstance) 
+            ? $this->repository->getLastMigration(
+                $schemaClass)
             : $writer->migrationPath();
 
         $this->createFile(
@@ -210,7 +257,7 @@ class MigrateMakeCommand extends BaseCommand
 
         $this->signature .= "{--s|smooth : Create a migration file from a Smooth Schema Class.}";
 
-        $this->signature .= "{--co|correct : Correct a migration file that has already run.}";
+        $this->signature .= "{--co|correct=all : Correct a migration file that has already run.}";
     }
 
     /**
@@ -236,17 +283,6 @@ class MigrateMakeCommand extends BaseCommand
         foreach ($changelogs as $log) {
             $this->info($log);
         }
-    }
-
-    /**
-     * Get Schema Class
-     * @param Schema $schema
-     * 
-     * @return string $schemaClass
-     */
-    protected function constructSchemaClass(Schema $schema)
-    {
-        return $schema->basename() . Constants::SMOOTH_SCHEMA_FILE;
     }
 
 }

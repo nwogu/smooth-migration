@@ -146,13 +146,23 @@ abstract class Schema
     }
 
     /**
-     * Returns Class Name without "Schema"
+     * Set the active reader
+     * @param \Nwogu\SmoothMigration\Helpers\SchemaReader
+     * 
+     * @return void
+     */
+    public function setReader(SchemaReader $reader)
+    {
+        $this->reader = $reader;
+    }
+
+    /**
+     * Returns Class Name
      * @return string
      */
-    public function basename()
+    public function className()
     {
-        return substr(static::class, 0, 
-                strpos(static::class, Constants::SMOOTH_SCHEMA_FILE));
+        return static::class;
     }
 
     /**
