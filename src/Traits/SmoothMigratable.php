@@ -3,6 +3,7 @@
 namespace Nwogu\SmoothMigration\Traits;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Artisan;
 use Nwogu\SmoothMigration\Abstracts\Schema;
 use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
@@ -155,7 +156,7 @@ trait SmoothMigratable
     protected function prepareDatabase()
     {
         if (! $this->repository->repositoryExists()) {
-            $this->call(
+            Artisan::call(
                 'smooth:install'
             );
         }
