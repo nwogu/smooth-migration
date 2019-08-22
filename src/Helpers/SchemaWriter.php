@@ -100,11 +100,12 @@ class SchemaWriter
 
     /**
      * Form a migration class
-     * @return $this
+     * @param string $class
+     * @return void
      */
-    protected function makeMigrationClass()
+    public function makeMigrationClass($class = null)
     {
-        $this->migrationClass = Str::studly($this->schema->basename() . "MigrationOn" . 
+        $this->migrationClass = $class ?? Str::studly($this->schema->className() . "MigrationOn" . 
             Carbon::now()->format("DMYhis"));
     }
 

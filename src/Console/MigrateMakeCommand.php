@@ -269,7 +269,7 @@ class MigrateMakeCommand extends BaseCommand
     {
         $batchNumber = $this->repository->getLastBatchNumber($instance->className()) - 
                         $this->parseBatchOption();
-        return $batchNumber <= 0 ? 1 : $batchNumber;
+        return $batchNumber < 0 ? 0 : $batchNumber;
     }
 
     /**
@@ -284,8 +284,7 @@ class MigrateMakeCommand extends BaseCommand
         $schemaClass = $schemaInstance->className();
 
         $migrationPath = $this->shouldCorrectMigration($schemaInstance) 
-            ? $this->repository->getLastMigration(
-                $schemaClass)
+            ? $this->getMigrationPathForCorrection($schemaClass, $writer)
             : $writer->migrationPath();
 
         $this->createFile(
@@ -296,6 +295,22 @@ class MigrateMakeCommand extends BaseCommand
 
         $this->runCount++;
 
+        return $migrationPath;
+    }
+
+    /**
+     * Get migration path for correction
+     * @param string $schemaClass
+     * @param SchemaWriter $writer
+     * 
+     * @return string $migrationPath
+     */
+    protected function getMigrationPathForCorrection(string $schemaClass, SchemaWriter $writer)
+    {
+        $migrationPath = $this->repository->getLastMigration($schemaClass);
+        $writer->makeMigrationClass(
+            $this->getMigrationClassNameFromPath($migrationPath)
+        );
         return $migrationPath;
     }
 

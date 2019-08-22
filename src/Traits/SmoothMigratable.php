@@ -2,6 +2,7 @@
 
 namespace Nwogu\SmoothMigration\Traits;
 
+use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 use Nwogu\SmoothMigration\Abstracts\Schema;
@@ -90,6 +91,17 @@ trait SmoothMigratable
     public function getSchemaName($path)
     {
         return str_replace('.php', '', basename($path));
+    }
+
+    /**
+     * Get class name from path
+     * @param string $path
+     * @return string
+     */
+    public function getMigrationClassNameFromPath(string $path)
+    {
+        $name = $this->getSchemaName($path);
+        return Str::studly(implode('_', array_slice(explode('_', $name), 4)));
     }
 
     /**

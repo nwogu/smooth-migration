@@ -695,7 +695,7 @@ class SchemaComposer
      */
     protected function hasMorphs(string $column)
     {
-        $schema = $this->reader->currentLoad()[$column];
+        $schema = $this->reader->currentLoad()[$column] ?? "";
         $arrayedSchema = $this->schemaArray($schema, $column);
         return array_key_exists("morphs", $arrayedSchema) 
             || array_key_exists("nullableMorphs", $arrayedSchema);
