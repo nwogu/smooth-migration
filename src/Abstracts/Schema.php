@@ -75,20 +75,6 @@ abstract class Schema
     }
 
     /**
-     * Get Serialize Path For saved schemas
-     * @return string
-     */
-    public function serializePath()
-    {
-        $serializerPath =  config("smooth.serializer_path") . static::class . ".json";
-        if (! file_exists($serializerPath)) {
-            throw new \Exception(
-                "Serializer path $serializerPath not found for" . static::class);
-        }
-        return $serializerPath;
-    }
-
-    /**
      * Get Current Schema Load for Migration
      * @return array
      */

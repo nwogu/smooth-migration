@@ -15,9 +15,10 @@ Install via composer:
 
 ```composer require nwogu/smooth-migration```
 
-## Setup:
+## Schema Folder:
 
-Publish the config files with the ```php artisan vendor:publish``` command 
+If you'd like to change the default schema directory, publish the config files with the  
+```php artisan vendor:publish``` command 
 
 The default schema directory is in database/schemas
 
@@ -55,6 +56,7 @@ class ProductSchema extends Schema
 
     /**
      * Schema Definitions
+     * @param \Nwogu\SmoothMigration\Definition
      */
     protected function define(Definition $definition)
     {
@@ -67,9 +69,13 @@ class ProductSchema extends Schema
 
 }
 ```
+### Schema Definition Syntax.  
+The syntax to define schemas is similar to writing laravel validation rules. 
+Each \Nwogu\SmoothMigration\Definition property is a column name.  
+Each string definition contains valid \Illuminate\Database\Schema\Blueprint methods with parmeters  
+seperated by a ":"
 
-
-To generate the migrations from the schemas, call the ```php artisan make:migration -s``` command
+To generate the migrations from the schemas, call the ```php artisan make:migration -s|smooth``` command
 
 This command will generate the appropriate migration files.  
 
@@ -126,22 +132,43 @@ $definition->votes = "unsignedTinyInteger";
 $definition->id = "uuid";
 $definition->birth_year = "year";
 ```  
-Auto Increments and timestamps are inserted by default, to disable this, specify the attributes in your schema class:  
+## Id Field and Timestamps  
+You can specify which method your id field should take on. idfield is "increments" by default,  
+keep in mind that a bigInteger field isn't compatible with an integer field, when specifying  
+the foreign key definition
+You can disable timestamps by specifying the property in your schema class. timestamps are added by default 
 
 ```
 class ProductSchema extends Schema
 {
     /**
      * Auto Incrementing Id
-     * @var bool
+     * @var string
      */
-    protected $autoIncrement = false
+    protected $idField = "bigIncrements";
     
     /**
      * Add Timestamps
      * @var bool
      */
-    protected $timestamps = false
+    protected $timestamps = false;
+    
+```  
+Foreign key definition  
+
+```
+class OutletProductSchema extends Schema
+{
+    ...
+
+    /**
+     * Schema Definitions
+     * @param \Nwogu\SmoothMigration\Definition
+     */
+    protected function define(Definition $definition)
+    {
+        $definition->product_id = "bigInteger|on:products|onDelete:cascade";
+    }
     
 ```  
 ## Running Migrations in Order  
@@ -152,8 +179,8 @@ You can specify which schema to run first with the ```runFirst``` property
 class ProductSchema extends Schema
 {
     /**
-     * Auto Incrementing Id
-     * @var bool
+     * Specify which schema should run first
+     * @var array
      */
     protected $runFirst = [
         OutletSchema::class,
@@ -171,5 +198,15 @@ Make changes to your schema class directly.
 Run the ```php artisan make: migration -s``` command, this will generate the appropriate migration files.
 
 To run your migrations:
-```php artisan migrate```
+```php artisan migrate```  
+
+## Correcting Defined Migrations  
+
+You may have generated a migration and realized you made a mistake. Instead of generating a new  
+migration file, you can pass the  ```--correct``` flag to adjust the last made migration file.  
+
+Eg: ```php artisan make:migration --smooth --correct=product```  
+This will compare the current changes with the changes you made before your last.  
+You can also specify how far back the comparing should go by adding ```.{step}``` to the table name.  
+ Eg: ```php artisan make:migration --smooth --correct=product.2```  
 
