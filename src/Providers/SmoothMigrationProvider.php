@@ -5,7 +5,6 @@ namespace Nwogu\SmoothMigration\Providers;
 use Illuminate\Support\ServiceProvider;
 use Nwogu\SmoothMigration\Helpers\Constants;
 use Nwogu\SmoothMigration\Console\SmoothCreateCommand;
-use Nwogu\SmoothMigration\Console\SmoothInstallCommand;
 use Nwogu\SmoothMigration\Repositories\SmoothMigrationRepository;
 
 class SmoothMigrationProvider extends ServiceProvider
@@ -33,8 +32,7 @@ class SmoothMigrationProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                SmoothCreateCommand::class,
-                SmoothInstallCommand::class
+                SmoothCreateCommand::class
             ]);
         }
 

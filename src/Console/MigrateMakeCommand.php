@@ -78,8 +78,9 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function shouldCorrectMigration(Schema $schema)
     {
-        return !$this->hasCorrectionBeenRequested()
-                ?: $this->isCorrectionForSchema($schema);
+        return $this->hasCorrectionBeenRequested()
+                ? $this->isCorrectionForSchema($schema)
+                : $this->hasCorrectionBeenRequested();
     }
 
     /**
@@ -99,8 +100,7 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function isCorrectionForSchema(Schema $schema)
     {
-        return $this->parseCorrectionOption() == "all" 
-            || $schema->className() == $this->transformOptionToSchemaClassName();
+        return $schema->className() == $this->transformOptionToSchemaClassName();
     }
 
     /**
@@ -248,7 +248,7 @@ class MigrateMakeCommand extends BaseCommand
     {
         return $this->shouldCorrectMigration($instance) 
             ? $this->repository->reduceBatchNumber($instance) 
-            : $this->repository->getLastBatchNumber($instance);
+            : $this->repository->getLastBatchNumber($instance->className());
     }
 
     /**
@@ -267,9 +267,9 @@ class MigrateMakeCommand extends BaseCommand
      */
     protected function reduceBatchNumber(Schema $instance)
     {
-        $batchNumber = $this->repository->getLastBatchNumber($instance) - 
+        $batchNumber = $this->repository->getLastBatchNumber($instance->className()) - 
                         $this->parseBatchOption();
-        return $batchNumber < 0 ? 1 : $batchNumber;
+        return $batchNumber <= 0 ? 1 : $batchNumber;
     }
 
     /**
@@ -309,7 +309,7 @@ class MigrateMakeCommand extends BaseCommand
 
         $this->signature .= "{--s|smooth : Create a migration file from a Smooth Schema Class.}";
 
-        $this->signature .= "{--co|correct=all : Correct a migration file that has already run.}";
+        $this->signature .= "{--c|correct= : Correct a migration file that has already run.}";
     }
 
     /**

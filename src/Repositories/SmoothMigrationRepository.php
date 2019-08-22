@@ -41,34 +41,6 @@ class SmoothMigrationRepository
     }
 
     /**
-     * Get the completed migrations.
-     *
-     * @return array
-     */
-    public function getRan()
-    {
-        return $this->table()
-                ->orderBy('batch', 'asc')
-                ->orderBy('migration', 'asc')
-                ->pluck('migration')->all();
-    }
-
-    /**
-     * Get list of migrations.
-     *
-     * @param  int  $steps
-     * @return array
-     */
-    public function getMigrations($steps)
-    {
-        $query = $this->table()->where('batch', '>=', '1');
-
-        return $query->orderBy('batch', 'desc')
-                     ->orderBy('migration', 'desc')
-                     ->take($steps)->get()->all();
-    }
-
-    /**
      * Get the last migration batch.
      * @param string $schemaClass
      *
@@ -77,7 +49,7 @@ class SmoothMigrationRepository
     public function getLast(string $schemaClass)
     {
         return $this->table()->where('schema_class', $schemaClass)
-            ->where('batch', $this->getLastBatchNumber())->first();
+            ->where('batch', $this->getLastBatchNumber($schemaClass))->first();
     }
 
     /**
@@ -107,40 +79,29 @@ class SmoothMigrationRepository
         while (! $query->where('batch', $batch)->exists() && $batch > 0) {
             $batch--;
         }
-        return json_decode(
-            $query->where('batch', $batch)->first()->schema_load, true);
+        $load = optional($query->where('batch', $batch)->first())->schema_load;
+        return json_decode($load, true);
     }
 
     /**
      * Log that a migration was run.
      *
      * @param  string  $schemaClass
-     * @param  array  $schemaLoad
+     * @param  string  $schemaLoad
      * @param string|null $migrationPath
      * @param int $batch
      * @return void
      */
-    public function log($schemaClass, $schemaLoad, $migrationPath = null, $batch = 0)
+    public function log(string $schemaClass, string $schemaLoad, $migrationPath = null, int $batch = 0)
     {
         $record = [
             'schema_class' => $schemaClass, 
-            'schema_load' => json_encode($schemaLoad),
+            'schema_load' => $schemaLoad,
             'migration_path' => $migrationPath,
             'batch' => $batch
         ];
 
         $this->table()->insert($record);
-    }
-
-    /**
-     * Remove a migration from the log.
-     *
-     * @param  object  $migration
-     * @return void
-     */
-    public function delete($migration)
-    {
-        $this->table()->where('migration', $migration->migration)->delete();
     }
 
     /**

@@ -156,9 +156,7 @@ trait SmoothMigratable
     protected function prepareDatabase()
     {
         if (! $this->repository->repositoryExists()) {
-            Artisan::call(
-                'smooth:install'
-            );
+            $this->repository->createRepository();
         }
     }
     
